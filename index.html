@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Il nostro calendario</title>
 <style>
-  :root { --paper:#fff8ec; --ink:#3a2a22; --gold:#e8b44c; --red:#b8402f; --night:#1d2233; }
+  @font-face { font-family:"Crayons"; src:url("fonts/i_eat_crayons.ttf") format("truetype"); font-display:swap; }
+  :root { --font:"Crayons", Georgia, "Times New Roman", serif; --paper:#fff8ec; --ink:#3a2a22; --gold:#e8b44c; --red:#b8402f; --night:#1d2233; }
   * { box-sizing: border-box; }
-  html, body { margin:0; background:var(--night); font-family: Georgia, "Times New Roman", serif; color:var(--ink); }
+  html, body { margin:0; background:var(--night); font-family:var(--font); color:var(--ink); }
   body { min-height:100vh; }
 
   /* L'immagine occupa tutta la larghezza; se è più alta dello schermo, si scorre in verticale */
@@ -17,7 +18,7 @@
   /* Casella sulla foto: o il tuo disegno, o un riquadro di prova col numero */
   .door { position:absolute; width:11%; aspect-ratio:1; transform:translate(-50%,-50%); padding:0; cursor:pointer;
           border:3px solid var(--gold); border-radius:6px; background:rgba(184,64,47,.9); color:#fff;
-          font: 700 clamp(14px, 3.2vw, 34px) Georgia, serif; box-shadow:0 3px 10px rgba(0,0,0,.35);
+          font: 400 clamp(14px, 3.2vw, 34px) var(--font); box-shadow:0 3px 10px rgba(0,0,0,.35);
           transition: transform .2s, opacity .3s; }
   .door.drawn { background:transparent center/contain no-repeat; border:0; box-shadow:none;
                 filter:drop-shadow(0 3px 6px rgba(0,0,0,.4)); font-size:0; }
@@ -43,7 +44,7 @@
   #content p { margin:0; font-size:1.25rem; line-height:1.5; white-space:pre-line; }
   #content img { max-width:100%; max-height:48vh; border-radius:6px; }
   #content .nota { font-size:3rem; }
-  #content .brano { font-size:1.4rem; font-weight:700; }
+  #content .brano { font-size:1.4rem; }
   #content a.btn { padding:10px 20px; background:var(--red); color:#fff; border-radius:999px; text-decoration:none; }
   #close { background:none; border:0; font:inherit; text-decoration:underline; cursor:pointer; color:var(--ink); }
 
@@ -55,12 +56,12 @@
   #leafR { right:0; transform-origin:right center; border-radius:0 10px 10px 0; border-left-width:2px; }
   .leaf.drawn#leafL { background-position:left center; } .leaf.drawn#leafR { background-position:right center; }
   .leaf span { position:absolute; top:50%; width:200%; transform:translateY(-50%); text-align:center; color:#fff;
-               font:700 5rem Georgia, serif; }
+               font:400 5rem var(--font); }
   #leafL span { left:0; } #leafR span { right:0; }
   #scene.open #leafL { transform:rotateY(-118deg); }
   #scene.open #leafR { transform:rotateY(118deg); }
 
-  #bar { position:fixed; left:8px; top:8px; z-index:20; display:none; gap:8px; background:#fff; padding:8px; border-radius:8px; font:14px sans-serif; }
+  #bar { position:fixed; left:8px; top:8px; z-index:20; display:none; gap:8px; background:#fff; padding:8px; border-radius:8px; font:14px sans-serif; } /* barra di servizio, resta normale */
   body.edit #bar { display:flex; align-items:center; }
   body.edit .door { cursor:grab; touch-action:none; }
   @media (prefers-reduced-motion: reduce) { .door, .leaf, #content { transition:none; } }
