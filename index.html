@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Il nostro calendario</title>
+<style>
+  :root { --paper:#fff8ec; --ink:#3a2a22; --gold:#e8b44c; --red:#b8402f; --night:#1d2233; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--night); font-family: Georgia, "Times New Roman", serif; color:var(--ink); }
+  body { display:flex; align-items:center; justify-content:center; }
+
+  /* La scena ha le stesse proporzioni della tua foto, così le caselle restano al loro posto */
+  #stage { position:relative; width:min(100vw, calc(100vh * var(--ratio))); aspect-ratio: var(--ratio);
+           background: url("sfondo.jpg") center/100% 100% no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
+
+  .door { position:absolute; width:11%; aspect-ratio:1; transform:translate(-50%,-50%);
+          border:3px solid var(--gold); border-radius:6px; background:rgba(184,64,47,.88); color:#fff;
+          font: 700 clamp(14px, 3.2vw, 34px) Georgia, serif; cursor:pointer; padding:0;
+          box-shadow: 0 3px 10px rgba(0,0,0,.35); transition: transform .2s, background .2s; }
+  .door:hover { transform:translate(-50%,-50%) scale(1.08); }
+  .door:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+  .door.locked { background:rgba(60,50,60,.7); border-color:#aaa; cursor:not-allowed; }
+  .door.locked:hover { transform:translate(-50%,-50%); }
+  .door.opened { background:rgba(232,180,76,.85); color:var(--ink); }
+  .door.shake { animation: shake .4s; }
+  @keyframes shake { 20%,60%{translate:-6px 0} 40%,80%{translate:6px 0} }
+
+  #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+             background:rgba(15,18,30,.7); padding:16px; z-index:10; }
+  #overlay.on { display:flex; }
+  #gift { background:var(--paper); border:6px solid var(--gold); border-radius:10px; max-width:min(92vw,520px);
+          max-height:90vh; overflow:auto; padding:24px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  #gift h2 { margin:0 0 12px; font-size:1.5rem; }
+  #gift p { margin:12px 0; font-size:1.15rem; line-height:1.5; white-space:pre-line; }
+  #gift img { max-width:100%; max-height:55vh; border-radius:6px; }
+  #gift a.btn { display:inline-block; margin-top:8px; padding:10px 18px; background:var(--red); color:#fff; border-radius:999px; text-decoration:none; }
+  #close { margin-top:16px; background:none; border:0; font:inherit; text-decoration:underline; cursor:pointer; color:var(--ink); }
+
+  #bar { position:fixed; left:8px; top:8px; z-index:20; display:none; gap:8px; background:#fff; padding:8px; border-radius:8px; font:14px sans-serif; }
+  body.edit #bar { display:flex; align-items:center; }
+  body.edit .door { cursor:grab; touch-action:none; }
+  @media (prefers-reduced-motion: reduce) { .door, .door.shake { transition:none; animation:none; } }
+</style>
+</head>
+<body>
+
+<div id="bar"><span>Modalità sposta: trascina le caselle</span><button id="copy">Copia posizioni</button></div>
+<div id="stage"></div>
+<div id="overlay"><div id="gift" role="dialog" aria-modal="true"></div></div>
+
+<script>
+/* =====================================================================
+   ✏️  QUI MODIFICHI TUTTO TU
+   - sfondo.jpg: metti nella stessa cartella la tua foto/disegno con la casetta
+   - ratio: larghezza/altezza della tua immagine (es. 1600x1000 → 1.6)
+   - per ogni giorno: msg (testo), img (percorso foto), link, linkText
+   - pos: [x%, y%] della casella sulla foto (si regola con ?sposta=1)
+   ===================================================================== */
+const RATIO = 1.6;
+const ANNO = 2026;
+const SBLOCCA_TUTTO = false;   // metti true per provare tutte le caselle
+
+const GIORNI = [
+  { data:"11-26", pos:[14,22], titolo:"26 novembre", msg:"Il tuo primo regalo!", img:"", link:"", linkText:"" },
+  { data:"11-27", pos:[26,22], titolo:"27 novembre", msg:"Scrivi qui il messaggio del giorno.", img:"", link:"", linkText:"" },
+  { data:"11-28", pos:[38,22], titolo:"28 novembre", msg:"", img:"foto/3.jpg", link:"", linkText:"" },
+  { data:"11-29", pos:[50,22], titolo:"29 novembre", msg:"Guarda questo:", img:"", link:"https://example.com", linkText:"Apri il link" },
+  { data:"11-30", pos:[62,22], titolo:"30 novembre", msg:"", img:"", link:"", linkText:"" },
+  { data:"12-01", pos:[74,22], titolo:"1 dicembre",  msg:"", img:"", link:"", linkText:"" },
+  { data:"12-02", pos:[86,22], titolo:"2 dicembre",  msg:"", img:"", link:"", linkText:"" },
+  { data:"12-03", pos:[14,52], titolo:"3 dicembre",  msg:"", img:"", link:"", linkText:"" },
+  { data:"12-04", pos:[26,52], titolo:"4 dicembre",  msg:"", img:"", link:"", linkText:"" },
+  { data:"12-05", pos:[38,52], titolo:"5 dicembre",  msg:"", img:"", link:"", linkText:"" },
+  { data:"12-06", pos:[50,52], titolo:"6 dicembre",  msg:"", img:"", link:"", linkText:"" },
+  { data:"12-07", pos:[62,52], titolo:"7 dicembre",  msg:"", img:"", link:"", linkText:"" },
+  { data:"12-08", pos:[74,52], titolo:"8 dicembre",  msg:"", img:"", link:"", linkText:"" },
+  { data:"12-09", pos:[86,52], titolo:"9 dicembre",  msg:"Ultimo regalo! 🎁", img:"", link:"", linkText:"" },
+];
+/* ===================== fine parte da modificare ===================== */
+
+const params = new URLSearchParams(location.search);
+const editMode = params.has("sposta");
+const unlockAll = SBLOCCA_TUTTO || params.has("prova");
+if (editMode) document.body.classList.add("edit");
+
+const stage = document.getElementById("stage");
+const overlay = document.getElementById("overlay");
+const gift = document.getElementById("gift");
+stage.style.setProperty("--ratio", RATIO);
+
+let opened = [];
+try { opened = JSON.parse(localStorage.getItem("aperti") || "[]"); } catch (e) {}
+
+const isUnlocked = g => unlockAll || new Date() >= new Date(`${ANNO}-${g.data}T00:00:00`);
+const dayNumber = g => String(parseInt(g.data.split("-")[1], 10));
+
+GIORNI.forEach((g, i) => {
+  const b = document.createElement("button");
+  b.className = "door";
+  b.textContent = dayNumber(g);
+  b.style.left = g.pos[0] + "%";
+  b.style.top = g.pos[1] + "%";
+  b.setAttribute("aria-label", g.titolo);
+  const refresh = () => {
+    b.classList.toggle("locked", !isUnlocked(g));
+    b.classList.toggle("opened", opened.includes(g.data));
+  };
+  refresh();
+  if (editMode) { makeDraggable(b, g); } else {
+    b.addEventListener("click", () => {
+      if (!isUnlocked(g)) {
+        b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake");
+        return;
+      }
+      openGift(g, b);
+      if (!opened.includes(g.data)) {
+        opened.push(g.data);
+        try { localStorage.setItem("aperti", JSON.stringify(opened)); } catch (e) {}
+      }
+      refresh();
+    });
+  }
+  stage.appendChild(b);
+});
+
+function openGift(g, doorEl) {
+  gift.innerHTML = "";
+  const h = document.createElement("h2"); h.textContent = g.titolo; gift.appendChild(h);
+  if (g.img) { const im = document.createElement("img"); im.src = g.img; im.alt = ""; gift.appendChild(im); }
+  if (g.msg) { const p = document.createElement("p"); p.textContent = g.msg; gift.appendChild(p); }
+  if (g.link) {
+    const a = document.createElement("a"); a.className = "btn"; a.href = g.link;
+    a.target = "_blank"; a.rel = "noopener"; a.textContent = g.linkText || "Apri";
+    gift.appendChild(a);
+  }
+  const c = document.createElement("button"); c.id = "close"; c.textContent = "Chiudi"; c.onclick = closeGift;
+  gift.appendChild(c);
+
+  overlay.classList.add("on");
+  // zoom: la finestra parte dalla posizione della casella e si ingrandisce
+  const from = doorEl.getBoundingClientRect(), to = gift.getBoundingClientRect();
+  const dx = (from.left + from.width / 2) - (to.left + to.width / 2);
+  const dy = (from.top + from.height / 2) - (to.top + to.height / 2);
+  const s = from.width / to.width;
+  gift.animate(
+    [{ transform: `translate(${dx}px,${dy}px) scale(${s})`, opacity: 0 }, { transform: "none", opacity: 1 }],
+    { duration: 550, easing: "cubic-bezier(.2,.8,.2,1)" }
+  );
+  c.focus();
+}
+function closeGift() { overlay.classList.remove("on"); }
+overlay.addEventListener("click", e => { if (e.target === overlay) closeGift(); });
+addEventListener("keydown", e => { if (e.key === "Escape") closeGift(); });
+
+function makeDraggable(el, g) {
+  el.addEventListener("pointerdown", e => {
+    el.setPointerCapture(e.pointerId);
+    const move = ev => {
+      const r = stage.getBoundingClientRect();
+      g.pos[0] = Math.round(Math.min(100, Math.max(0, (ev.clientX - r.left) / r.width * 100)) * 10) / 10;
+      g.pos[1] = Math.round(Math.min(100, Math.max(0, (ev.clientY - r.top) / r.height * 100)) * 10) / 10;
+      el.style.left = g.pos[0] + "%"; el.style.top = g.pos[1] + "%";
+    };
+    const up = () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); };
+    el.addEventListener("pointermove", move); el.addEventListener("pointerup", up);
+  });
+}
+document.getElementById("copy").addEventListener("click", () => {
+  const txt = GIORNI.map(g => `${g.data}: pos:[${g.pos[0]},${g.pos[1]}]`).join("\n");
+  navigator.clipboard.writeText(txt).then(() => alert("Copiato! Incollami le posizioni in chat oppure sostituisci i pos nel file."));
+});
+</script>
+</body>
+</html>
