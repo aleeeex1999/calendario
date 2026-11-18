@@ -20,7 +20,8 @@
           background:none; cursor:pointer; transition: transform .2s, opacity .3s; color:#fff;
           font:400 clamp(11px, 2vw, 24px) var(--font); }
   .door .idle { position:absolute; inset:0; }
-  .door .idle img { position:absolute; inset:0; width:100%; height:100%; pointer-events:none;
+  .door { overflow:visible; }
+  .door .idle img { position:absolute; left:0; top:-53.4%; width:100%; height:153.4%; pointer-events:none;
                     filter:drop-shadow(0 3px 5px rgba(0,0,0,.35)); }
   .door .idle .i0 { animation:alt0 1s steps(1,end) infinite; animation-delay:var(--d); }
   .door .idle .i1 { animation:alt1 1s steps(1,end) infinite; animation-delay:var(--d); }
@@ -99,9 +100,12 @@ const RATIO = 1.6;            // larghezza ÷ altezza della tua immagine di sfon
 const ANNO = 2026;
 const ETICHETTA = "";         // il tuo disegno dell'etichetta per le foto (es. "disegni/etichetta.png"). Vuoto = etichetta semplice di prova
 
-// Buste: due disegni che si alternano ogni mezzo secondo, e i frame dell'apertura in ordine (chiusa → aperta)
-const BUSTA_IDLE = ["disegni/idle-1.png", "disegni/idle-2.png"];
+// Buste (cartella "disegni"). Tutti i frame hanno la stessa inquadratura.
+//   apertura-0 = chiusa ruotata, apertura-1 = chiusa dritta (a riposo si alternano 1-0-1-0)
+//   apertura-2, 3 = si apre; apertura-4 = aperta; apertura-5, 6 = si richiude (poi torna all'alternanza)
+const BUSTA_IDLE = ["disegni/apertura-1.png", "disegni/apertura-0.png"];
 const BUSTA_APERTURA = ["disegni/apertura-1.png", "disegni/apertura-2.png", "disegni/apertura-3.png", "disegni/apertura-4.png"];
+const BUSTA_CHIUSURA = ["disegni/apertura-5.png", "disegni/apertura-6.png"];
 const MS_FRAME = 140;         // durata di ogni frame dell'apertura (millisecondi)
 const SBLOCCA_TUTTO = true;   // true = puoi aprire tutto per provare. Mettilo a false prima di condividere!
 
@@ -129,7 +133,7 @@ const GIORNI = [
 
 // Misure dei frame di apertura (640 x 695): dove sta la busta chiusa dentro il frame
 const CHIUSA_TOP = 0.348, CHIUSA_H = 0.652;
-[...BUSTA_IDLE, ...BUSTA_APERTURA].forEach(src => { new Image().src = src; });  // precarico i disegni
+[...BUSTA_IDLE, ...BUSTA_APERTURA, ...BUSTA_CHIUSURA].forEach(src => { new Image().src = src; });  // precarico i disegni
 
 const params = new URLSearchParams(location.search);
 const editMode = params.has("sposta");
@@ -213,6 +217,7 @@ function openGift(g, doorEl) {
   }
 
   // 2) la busta vola al centro e si apre frame dopo frame
+  portaCorrente = doorEl;
   if (envEl) envEl.remove();
   scene.classList.remove("open");
   overlay.classList.add("on");
@@ -259,8 +264,36 @@ function openGift(g, doorEl) {
       .onfinish = () => { mine.remove(); if (envEl === mine) envEl = null; };
   }
 }
-let envEl = null;
-function closeGift() { overlay.classList.remove("on"); scene.classList.remove("open"); if (envEl) { envEl.remove(); envEl = null; } }
+let envEl = null, portaCorrente = null, chiudendo = false;
+function closeGift() {
+  if (chiudendo || !overlay.classList.contains("on")) return;
+  const rivelata = scene.classList.contains("open");
+  if (envEl) { envEl.remove(); envEl = null; }
+  if (!rivelata || reduceMotion || !portaCorrente) { scene.classList.remove("open"); overlay.classList.remove("on"); return; }
+
+  // la sorpresa sparisce, la busta (vuota) si richiude e torna al suo posto, poi riprende l'alternanza
+  chiudendo = true;
+  const sp = scene.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: "forwards" });
+  sp.onfinish = () => {
+    scene.classList.remove("open"); sp.cancel();
+    const mine = envEl = el("div", { id: "env" }, overlay);
+    const f = el("img", { className: "f", src: BUSTA_APERTURA[BUSTA_APERTURA.length - 1], alt: "" }, mine);
+    const seq = [...BUSTA_CHIUSURA, BUSTA_APERTURA[0]];
+    seq.forEach((src, i) => setTimeout(() => { f.src = src; }, (i + 1) * MS_FRAME));
+    setTimeout(() => {
+      const to = mine.getBoundingClientRect(), from = portaCorrente.getBoundingClientRect();
+      const cy = CHIUSA_TOP + CHIUSA_H / 2;
+      mine.style.transformOrigin = `50% ${cy * 100}%`;
+      const dx = (from.left + from.width / 2) - (to.left + to.width / 2);
+      const dy = (from.top + from.height / 2) - (to.top + to.height * cy);
+      overlay.animate([{ backgroundColor: "rgba(15,18,30,.75)" }, { backgroundColor: "rgba(15,18,30,0)" }], { duration: 550 });
+      mine.animate(
+        [{ transform: "none" }, { transform: `translate(${dx}px,${dy}px) scale(${from.width / to.width})` }],
+        { duration: 550, easing: "cubic-bezier(.5,0,.2,1)", fill: "forwards" }
+      ).onfinish = () => { mine.remove(); envEl = null; overlay.classList.remove("on"); chiudendo = false; };
+    }, (seq.length + 1) * MS_FRAME);
+  };
+}
 overlay.addEventListener("click", e => { if (e.target === overlay) closeGift(); });
 addEventListener("keydown", e => { if (e.key === "Escape") closeGift(); });
 
