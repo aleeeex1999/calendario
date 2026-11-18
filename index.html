@@ -18,7 +18,7 @@
   /* Casella sulla foto: o il tuo disegno, o un riquadro di prova col numero */
   .door { position:absolute; width:11%; aspect-ratio:1; transform:translate(-50%,-50%); padding:0; cursor:pointer;
           border:3px solid var(--gold); border-radius:6px; background:rgba(184,64,47,.9); color:#fff;
-          font: 400 clamp(14px, 3.2vw, 34px) var(--font); box-shadow:0 3px 10px rgba(0,0,0,.35);
+          font: 400 clamp(11px, 2.2vw, 26px) var(--font); box-shadow:0 3px 10px rgba(0,0,0,.35);
           transition: transform .2s, opacity .3s; }
   .door.drawn { background:transparent center/contain no-repeat; border:0; box-shadow:none;
                 filter:drop-shadow(0 3px 6px rgba(0,0,0,.4)); font-size:0; }
@@ -46,7 +46,14 @@
   #content .nota { font-size:3rem; }
   #content .brano { font-size:1.4rem; }
   #content a.btn { padding:10px 20px; background:var(--red); color:#fff; border-radius:999px; text-decoration:none; }
-  #close { background:none; border:0; font:inherit; text-decoration:underline; cursor:pointer; color:var(--ink); }
+  /* Sorpresa foto: la foto riempie tutto il quadrato, con un'etichetta per la didascalia */
+  #content.foto { display:block; padding:0; border:0; overflow:hidden; }
+  #content.foto img.scatto { width:100%; height:100%; max-height:none; object-fit:cover; border-radius:0; display:block; }
+  .etichetta { position:absolute; left:50%; bottom:6%; transform:translateX(-50%); width:62%; text-align:center; }
+  .etichetta img { width:100%; display:block; border-radius:0; }
+  .etichetta .testo { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+                      padding:0 10%; font-size:1.4rem; line-height:1.1; color:var(--ink); }
+  .etichetta.base { background:var(--paper); border:3px solid var(--gold); border-radius:8px; padding:10px 12px; font-size:1.4rem; color:var(--ink); }
 
   .leaf { position:absolute; top:0; bottom:0; width:50%; overflow:hidden; backface-visibility:hidden;
           background:var(--red) no-repeat; border:5px solid var(--gold);
@@ -56,7 +63,7 @@
   #leafR { right:0; transform-origin:right center; border-radius:0 10px 10px 0; border-left-width:2px; }
   .leaf.drawn#leafL { background-position:left center; } .leaf.drawn#leafR { background-position:right center; }
   .leaf span { position:absolute; top:50%; width:200%; transform:translateY(-50%); text-align:center; color:#fff;
-               font:400 5rem var(--font); }
+               font:400 4rem var(--font); }
   #leafL span { left:0; } #leafR span { right:0; }
   #scene.open #leafL { transform:rotateY(-118deg); }
   #scene.open #leafR { transform:rotateY(118deg); }
@@ -84,13 +91,14 @@
    ✏️  QUI MODIFICHI TUTTO TU
    Ogni giorno ha un "tipo" di sorpresa:
      "messaggio" → usa msg
-     "foto"      → usa img (percorso della foto) e, se vuoi, msg come didascalia
+     "foto"      → usa img (percorso della foto) e, se vuoi, didascalia (es. la data della foto)
      "canzone"   → usa brano (titolo) e link (indirizzo della canzone)
    "disegno" è il tuo disegno della casella (es. "disegni/26.png").
    Se lo lasci vuoto vedi un riquadro rosso di prova col numero.
    ===================================================================== */
 const RATIO = 1.6;            // larghezza ÷ altezza della tua immagine di sfondo
 const ANNO = 2026;
+const ETICHETTA = "";         // il tuo disegno dell'etichetta per le foto (es. "disegni/etichetta.png"). Vuoto = etichetta semplice di prova
 const SBLOCCA_TUTTO = true;   // true = puoi aprire tutto per provare. Mettilo a false prima di condividere!
 
 // Foto segnaposto per la prova: quando hai le tue, scrivi "foto/nome.jpg" al posto di prova(n)
@@ -100,7 +108,7 @@ const prova = n => "data:image/svg+xml;utf8," + encodeURIComponent(
 const GIORNI = [
   { data:"11-26", pos:[14,22], disegno:"", tipo:"canzone",   brano:"Titolo della canzone", link:"https://music.youtube.com" },
   { data:"11-27", pos:[26,22], disegno:"", tipo:"messaggio", msg:"Scrivi qui il tuo messaggio per questo giorno." },
-  { data:"11-28", pos:[38,22], disegno:"", tipo:"foto",      img:prova(3), msg:"Una didascalia, se vuoi." },
+  { data:"11-28", pos:[38,22], disegno:"", tipo:"foto",      img:prova(3), didascalia:"12 agosto 2023" },
   { data:"11-29", pos:[50,22], disegno:"", tipo:"foto",      img:prova(4) },
   { data:"11-30", pos:[62,22], disegno:"", tipo:"canzone",   brano:"Un’altra canzone", link:"https://music.youtube.com" },
   { data:"12-01", pos:[74,22], disegno:"", tipo:"messaggio", msg:"Ti voglio bene! 💛" },
@@ -108,7 +116,7 @@ const GIORNI = [
   { data:"12-03", pos:[14,52], disegno:"", tipo:"canzone",   brano:"Ancora musica", link:"https://music.youtube.com" },
   { data:"12-04", pos:[26,52], disegno:"", tipo:"messaggio", msg:"Oggi ti regalo un abbraccio lunghissimo." },
   { data:"12-05", pos:[38,52], disegno:"", tipo:"messaggio", msg:"Pensavo a una cosa che mi hai detto…" },
-  { data:"12-06", pos:[50,52], disegno:"", tipo:"foto",      img:prova(11), msg:"Ti ricordi?" },
+  { data:"12-06", pos:[50,52], disegno:"", tipo:"foto",      img:prova(11), didascalia:"Natale 2022" },
   { data:"12-07", pos:[62,52], disegno:"", tipo:"canzone",   brano:"La nostra canzone", link:"https://music.youtube.com" },
   { data:"12-08", pos:[74,52], disegno:"", tipo:"foto",      img:prova(13) },
   { data:"12-09", pos:[86,52], disegno:"", tipo:"messaggio", msg:"Ultimo regalo! Ti aspetta una sorpresa vera. 🎁" },
@@ -130,7 +138,9 @@ let opened = [];
 try { opened = JSON.parse(localStorage.getItem("aperti") || "[]"); } catch (e) {}
 
 const MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+const MESI_BREVI = ["GEN","FEB","MAR","APR","MAG","GIU","LUG","AGO","SET","OTT","NOV","DIC"];
 const num = g => parseInt(g.data.split("-")[1], 10);
+const sigla = g => `${num(g)} ${MESI_BREVI[parseInt(g.data.split("-")[0], 10) - 1]}`;
 const titolo = g => `${num(g)} ${MESI[parseInt(g.data.split("-")[0], 10) - 1]}`;
 // Data di oggi in Italia (AAAA-MM-GG), qualunque sia il fuso orario del dispositivo
 const oggiInItalia = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
@@ -142,7 +152,7 @@ setInterval(() => refreshers.forEach(f => f()), 30000); // se la pagina resta ap
 GIORNI.forEach(g => {
   const b = document.createElement("button");
   b.className = "door" + (g.disegno ? " drawn" : "");
-  if (g.disegno) b.style.backgroundImage = `url("${g.disegno}")`; else b.textContent = num(g);
+  if (g.disegno) b.style.backgroundImage = `url("${g.disegno}")`; else b.textContent = sigla(g);
   b.style.left = g.pos[0] + "%"; b.style.top = g.pos[1] + "%";
   b.setAttribute("aria-label", titolo(g));
   const refresh = () => {
@@ -169,10 +179,21 @@ function el(tag, props, parent) { const e = Object.assign(document.createElement
 function openGift(g, doorEl) {
   // 1) contenuto dietro le ante
   content.innerHTML = "";
-  el("h2", { textContent: titolo(g) }, content);
-  if (g.tipo === "foto") {
-    el("img", { src: g.img, alt: g.msg || "" }, content);
-    if (g.msg) el("p", { textContent: g.msg }, content);
+  const isFoto = g.tipo === "foto";
+  content.classList.toggle("foto", isFoto);
+  if (!isFoto) el("h2", { textContent: titolo(g) }, content);
+  if (isFoto) {
+    const cap = g.didascalia || g.msg || "";
+    el("img", { className: "scatto", src: g.img, alt: cap }, content);
+    if (cap) {
+      if (ETICHETTA) {
+        const e = el("div", { className: "etichetta" }, content);
+        el("img", { src: ETICHETTA, alt: "" }, e);
+        el("div", { className: "testo", textContent: cap }, e);
+      } else {
+        el("div", { className: "etichetta base", textContent: cap }, content);
+      }
+    }
   } else if (g.tipo === "canzone") {
     el("div", { className: "nota", textContent: "🎵" }, content);
     el("div", { className: "brano", textContent: g.brano || "" }, content);
@@ -180,13 +201,12 @@ function openGift(g, doorEl) {
   } else {
     el("p", { textContent: g.msg || "" }, content);
   }
-  el("button", { id: "close", textContent: "Chiudi", onclick: closeGift }, content);
 
   // 2) le ante riprendono l'aspetto della casella cliccata
   [leafL, leafR].forEach(l => {
     l.classList.toggle("drawn", !!g.disegno);
     l.style.backgroundImage = g.disegno ? `url("${g.disegno}")` : "";
-    l.firstElementChild.textContent = g.disegno ? "" : num(g);
+    l.firstElementChild.textContent = g.disegno ? "" : sigla(g);
   });
 
   // 3) la casella vola al centro e ingrandisce, poi le ante si aprono
