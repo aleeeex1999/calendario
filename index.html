@@ -7,10 +7,11 @@
 <style>
   :root { --paper:#fff8ec; --ink:#3a2a22; --gold:#e8b44c; --red:#b8402f; --night:#1d2233; }
   * { box-sizing: border-box; }
-  html, body { margin:0; height:100%; background:var(--night); font-family: Georgia, "Times New Roman", serif; color:var(--ink); }
-  body { display:flex; align-items:center; justify-content:center; }
+  html, body { margin:0; background:var(--night); font-family: Georgia, "Times New Roman", serif; color:var(--ink); }
+  body { min-height:100vh; }
 
-  #stage { position:relative; width:min(100vw, calc(100vh * var(--ratio))); aspect-ratio: var(--ratio);
+  /* L'immagine occupa tutta la larghezza; se è più alta dello schermo, si scorre in verticale */
+  #stage { position:relative; width:100%; aspect-ratio: var(--ratio);
            background: url("sfondo.jpg") center/100% 100% no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
 
   /* Casella sulla foto: o il tuo disegno, o un riquadro di prova col numero */
@@ -130,7 +131,12 @@ try { opened = JSON.parse(localStorage.getItem("aperti") || "[]"); } catch (e) {
 const MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
 const num = g => parseInt(g.data.split("-")[1], 10);
 const titolo = g => `${num(g)} ${MESI[parseInt(g.data.split("-")[0], 10) - 1]}`;
-const isUnlocked = g => unlockAll || new Date() >= new Date(`${ANNO}-${g.data}T00:00:00`);
+// Data di oggi in Italia (AAAA-MM-GG), qualunque sia il fuso orario del dispositivo
+const oggiInItalia = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+// Si apre dalla mezzanotte italiana del giorno in poi
+const isUnlocked = g => unlockAll || oggiInItalia() >= `${ANNO}-${g.data}`;
+const refreshers = [];
+setInterval(() => refreshers.forEach(f => f()), 30000); // se la pagina resta aperta, a mezzanotte si sblocca da sola
 
 GIORNI.forEach(g => {
   const b = document.createElement("button");
@@ -143,6 +149,7 @@ GIORNI.forEach(g => {
     b.classList.toggle("opened", opened.includes(g.data));
   };
   refresh();
+  refreshers.push(refresh);
   if (editMode) makeDraggable(b, g);
   else b.addEventListener("click", () => {
     if (!isUnlocked(g)) { b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); return; }
