@@ -16,8 +16,8 @@
            background: url("sfondo.jpg") center/100% 100% no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
 
   /* Casella sulla foto: busta che "respira" alternando due disegni, con la data sotto */
-  .door { position:absolute; width:11%; aspect-ratio:640/453; transform:translate(-50%,-50%); padding:0; border:0;
-          background:none; cursor:pointer; transition: transform .2s, opacity .3s; color:#fff;
+  .door { position:absolute; width:var(--busta, 12%); aspect-ratio:640/453; transform:translate(-50%,-50%); padding:0; border:0;
+          background:none; cursor:pointer; transition: transform .2s, opacity .3s; color:var(--data, #80478E);
           font:400 clamp(11px, 2vw, 24px) var(--font); }
   .door .idle { position:absolute; inset:0; }
   .door { overflow:visible; }
@@ -28,7 +28,7 @@
   @keyframes alt0 { 0%{opacity:1} 50%{opacity:0} 100%{opacity:1} }
   @keyframes alt1 { 0%{opacity:0} 50%{opacity:1} 100%{opacity:0} }
   .door .giorno { position:absolute; left:50%; top:100%; transform:translateX(-50%); margin-top:2px; white-space:nowrap;
-                  pointer-events:none; text-shadow:0 1px 4px rgba(0,0,0,.85), 0 0 2px rgba(0,0,0,.6); }
+                  pointer-events:none; text-shadow:0 0 4px rgba(255,255,255,.75); }
   .door:hover { transform:translate(-50%,-50%) scale(1.08); }
   .door:focus-visible { outline:3px solid #fff; outline-offset:6px; }
   .door.locked { filter:grayscale(.8) brightness(.8); cursor:not-allowed; }
@@ -38,23 +38,23 @@
   @keyframes shake { 20%,60%{translate:-6px 0} 40%,80%{translate:6px 0} }
 
   /* Sorpresa a schermo: la busta arriva al centro, si apre e il biglietto diventa la sorpresa */
-  #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+  #overlay { --w:min(94vw,760px,78vh); position:fixed; inset:0; display:none; align-items:center; justify-content:center;
              background:rgba(15,18,30,.75); padding:16px; z-index:10; }
   #overlay.on { display:flex; }
-  #scene { position:relative; z-index:12; width:min(90vw,480px); height:min(72vh,560px); visibility:hidden; }
+  #scene { position:relative; z-index:12; width:calc(var(--w) * .92); height:min(82vh, calc(var(--w) * .96)); visibility:hidden; }
   #scene.open { visibility:visible; }
 
-  #env { --w:min(88vw,520px,64vh); position:fixed; inset:0; margin:auto; z-index:11; width:var(--w); height:calc(var(--w) * 695 / 640); }
+  #env { position:fixed; inset:0; margin:auto; z-index:11; width:var(--w); height:calc(var(--w) * 695 / 640); }
   #env img { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
   #env .back, #env .front, #env .carta { display:none; }
   #env.fine .f { display:none; }
   #env.fine .back, #env.fine .front, #env.fine .carta { display:block; }
   #env .back { clip-path:inset(0 0 60% 0); }
   #env .front { clip-path:inset(40% 0 0 0); z-index:3; }
-  #env .carta { position:absolute; left:10%; width:80%; top:40%; height:56%; z-index:2; background:var(--paper);
-                border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+  #env .carta { position:absolute; left:4%; width:92%; top:40%; height:56%; z-index:2; background:#fff;
+                border-radius:0; box-shadow:0 2px 8px rgba(0,0,0,.2); }
 
-  #content { position:absolute; inset:0; background:var(--paper); border:6px solid var(--gold); border-radius:10px;
+  #content { position:absolute; inset:0; background:#fff; border:0; border-radius:0;
              padding:24px; overflow:auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
              gap:12px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
   #content h2 { margin:0; font-size:1.4rem; }
@@ -71,7 +71,7 @@
   .etichetta img { width:100%; display:block; border-radius:0; }
   .etichetta .testo { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
                       padding:0 10%; font-size:1.4rem; line-height:1.1; color:var(--ink); }
-  .etichetta.base { background:var(--paper); border:3px solid var(--gold); border-radius:8px; padding:10px 12px; font-size:1.4rem; color:var(--ink); }
+  .etichetta.base { background:#fff; border:0; border-radius:0; padding:10px 12px; font-size:1.4rem; color:var(--ink); }
 
   #bar { position:fixed; left:8px; top:8px; z-index:20; display:none; gap:8px; background:#fff; padding:8px; border-radius:8px; font:14px sans-serif; } /* barra di servizio, resta normale */
   body.edit #bar { display:flex; align-items:center; }
@@ -98,6 +98,8 @@
    ===================================================================== */
 const RATIO = 1.6;            // larghezza ÷ altezza della tua immagine di sfondo
 const ANNO = 2026;
+const LARGHEZZA_BUSTA = 12;   // larghezza di ogni busta sulla foto, in % della larghezza dello sfondo (più grande = buste più grandi)
+const COLORE_DATE = "#80478E"; // colore delle scritte "26 NOV", "27 NOV"...
 const ETICHETTA = "";         // il tuo disegno dell'etichetta per le foto (es. "disegni/etichetta.png"). Vuoto = etichetta semplice di prova
 
 // Buste (cartella "disegni"). Tutti i frame hanno la stessa inquadratura.
@@ -144,6 +146,8 @@ if (editMode) document.body.classList.add("edit");
 const $ = id => document.getElementById(id);
 const stage = $("stage"), overlay = $("overlay"), scene = $("scene"), content = $("content");
 stage.style.setProperty("--ratio", RATIO);
+stage.style.setProperty("--busta", LARGHEZZA_BUSTA + "%");
+document.documentElement.style.setProperty("--data", COLORE_DATE);
 
 let opened = [];
 try { opened = JSON.parse(localStorage.getItem("aperti") || "[]"); } catch (e) {}
