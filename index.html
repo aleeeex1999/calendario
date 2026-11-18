@@ -15,37 +15,54 @@
   #stage { position:relative; width:100%; aspect-ratio: var(--ratio);
            background: url("sfondo.jpg") center/100% 100% no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
 
-  /* Casella sulla foto: o il tuo disegno, o un riquadro di prova col numero */
-  .door { position:absolute; width:11%; aspect-ratio:1; transform:translate(-50%,-50%); padding:0; cursor:pointer;
-          border:3px solid var(--gold); border-radius:6px; background:rgba(184,64,47,.9); color:#fff;
-          font: 400 clamp(11px, 2.2vw, 26px) var(--font); box-shadow:0 3px 10px rgba(0,0,0,.35);
-          transition: transform .2s, opacity .3s; }
-  .door.drawn { background:transparent center/contain no-repeat; border:0; box-shadow:none;
-                filter:drop-shadow(0 3px 6px rgba(0,0,0,.4)); font-size:0; }
+  /* Casella sulla foto: busta che "respira" alternando due disegni, con la data sotto */
+  .door { position:absolute; width:11%; aspect-ratio:640/453; transform:translate(-50%,-50%); padding:0; border:0;
+          background:none; cursor:pointer; transition: transform .2s, opacity .3s; color:#fff;
+          font:400 clamp(11px, 2vw, 24px) var(--font); }
+  .door .idle { position:absolute; inset:0; }
+  .door .idle img { position:absolute; inset:0; width:100%; height:100%; pointer-events:none;
+                    filter:drop-shadow(0 3px 5px rgba(0,0,0,.35)); }
+  .door .idle .i0 { animation:alt0 1s steps(1,end) infinite; animation-delay:var(--d); }
+  .door .idle .i1 { animation:alt1 1s steps(1,end) infinite; animation-delay:var(--d); }
+  @keyframes alt0 { 0%{opacity:1} 50%{opacity:0} 100%{opacity:1} }
+  @keyframes alt1 { 0%{opacity:0} 50%{opacity:1} 100%{opacity:0} }
+  .door .giorno { position:absolute; left:50%; top:100%; transform:translateX(-50%); margin-top:2px; white-space:nowrap;
+                  pointer-events:none; text-shadow:0 1px 4px rgba(0,0,0,.85), 0 0 2px rgba(0,0,0,.6); }
   .door:hover { transform:translate(-50%,-50%) scale(1.08); }
-  .door:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+  .door:focus-visible { outline:3px solid #fff; outline-offset:6px; }
   .door.locked { filter:grayscale(.8) brightness(.8); cursor:not-allowed; }
   .door.locked:hover { transform:translate(-50%,-50%); }
   .door.opened { opacity:.55; }
   .door.shake { animation: shake .4s; }
   @keyframes shake { 20%,60%{translate:-6px 0} 40%,80%{translate:6px 0} }
 
-  /* Sorpresa a schermo: la casella arriva al centro e si apre come due ante */
+  /* Sorpresa a schermo: la busta arriva al centro, si apre e il biglietto diventa la sorpresa */
   #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center;
              background:rgba(15,18,30,.75); padding:16px; z-index:10; }
   #overlay.on { display:flex; }
-  #scene { position:relative; width:min(90vw,480px); height:min(72vh,560px); perspective:1400px; }
+  #scene { position:relative; z-index:12; width:min(90vw,480px); height:min(72vh,560px); visibility:hidden; }
+  #scene.open { visibility:visible; }
+
+  #env { --w:min(88vw,520px,64vh); position:fixed; inset:0; margin:auto; z-index:11; width:var(--w); height:calc(var(--w) * 695 / 640); }
+  #env img { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  #env .back, #env .front, #env .carta { display:none; }
+  #env.fine .f { display:none; }
+  #env.fine .back, #env.fine .front, #env.fine .carta { display:block; }
+  #env .back { clip-path:inset(0 0 60% 0); }
+  #env .front { clip-path:inset(40% 0 0 0); z-index:3; }
+  #env .carta { position:absolute; left:10%; width:80%; top:40%; height:56%; z-index:2; background:var(--paper);
+                border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,.25); }
 
   #content { position:absolute; inset:0; background:var(--paper); border:6px solid var(--gold); border-radius:10px;
              padding:24px; overflow:auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
-             gap:12px; text-align:center; opacity:0; transition:opacity .5s .25s; box-shadow:0 20px 60px rgba(0,0,0,.5); }
-  #scene.open #content { opacity:1; }
+             gap:12px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
   #content h2 { margin:0; font-size:1.4rem; }
   #content p { margin:0; font-size:1.25rem; line-height:1.5; white-space:pre-line; }
   #content img { max-width:100%; max-height:48vh; border-radius:6px; }
   #content .nota { font-size:3rem; }
   #content .brano { font-size:1.4rem; }
   #content a.btn { padding:10px 20px; background:var(--red); color:#fff; border-radius:999px; text-decoration:none; }
+
   /* Sorpresa foto: la foto riempie tutto il quadrato, con un'etichetta per la didascalia */
   #content.foto { display:block; padding:0; border:0; overflow:hidden; }
   #content.foto img.scatto { width:100%; height:100%; max-height:none; object-fit:cover; border-radius:0; display:block; }
@@ -55,23 +72,10 @@
                       padding:0 10%; font-size:1.4rem; line-height:1.1; color:var(--ink); }
   .etichetta.base { background:var(--paper); border:3px solid var(--gold); border-radius:8px; padding:10px 12px; font-size:1.4rem; color:var(--ink); }
 
-  .leaf { position:absolute; top:0; bottom:0; width:50%; overflow:hidden; backface-visibility:hidden;
-          background:var(--red) no-repeat; border:5px solid var(--gold);
-          transition: transform 1.1s cubic-bezier(.5,0,.2,1); }
-  .leaf.drawn { background-color:transparent; border:0; background-size:200% 100%; }
-  #leafL { left:0; transform-origin:left center; border-radius:10px 0 0 10px; border-right-width:2px; }
-  #leafR { right:0; transform-origin:right center; border-radius:0 10px 10px 0; border-left-width:2px; }
-  .leaf.drawn#leafL { background-position:left center; } .leaf.drawn#leafR { background-position:right center; }
-  .leaf span { position:absolute; top:50%; width:200%; transform:translateY(-50%); text-align:center; color:#fff;
-               font:400 4rem var(--font); }
-  #leafL span { left:0; } #leafR span { right:0; }
-  #scene.open #leafL { transform:rotateY(-118deg); }
-  #scene.open #leafR { transform:rotateY(118deg); }
-
   #bar { position:fixed; left:8px; top:8px; z-index:20; display:none; gap:8px; background:#fff; padding:8px; border-radius:8px; font:14px sans-serif; } /* barra di servizio, resta normale */
   body.edit #bar { display:flex; align-items:center; }
   body.edit .door { cursor:grab; touch-action:none; }
-  @media (prefers-reduced-motion: reduce) { .door, .leaf, #content { transition:none; } }
+  @media (prefers-reduced-motion: reduce) { .door { transition:none; } .door .idle img { animation:none; } .door .idle .i1 { display:none; } }
 </style>
 </head>
 <body>
@@ -79,11 +83,7 @@
 <div id="bar"><span>Modalità sposta: trascina le caselle</span><button id="copy">Copia posizioni</button></div>
 <div id="stage"></div>
 <div id="overlay">
-  <div id="scene" role="dialog" aria-modal="true">
-    <div id="content"></div>
-    <div class="leaf" id="leafL"><span></span></div>
-    <div class="leaf" id="leafR"><span></span></div>
-  </div>
+  <div id="scene" role="dialog" aria-modal="true"><div id="content"></div></div>
 </div>
 
 <script>
@@ -93,12 +93,16 @@
      "messaggio" → usa msg
      "foto"      → usa img (percorso della foto) e, se vuoi, didascalia (es. la data della foto)
      "canzone"   → usa brano (titolo) e link (indirizzo della canzone)
-   "disegno" è il tuo disegno della casella (es. "disegni/26.png").
-   Se lo lasci vuoto vedi un riquadro rosso di prova col numero.
+   Le buste (i due disegni "a riposo" e i frame di apertura) si cambiano in BUSTA_IDLE e BUSTA_APERTURA qui sotto.
    ===================================================================== */
 const RATIO = 1.6;            // larghezza ÷ altezza della tua immagine di sfondo
 const ANNO = 2026;
 const ETICHETTA = "";         // il tuo disegno dell'etichetta per le foto (es. "disegni/etichetta.png"). Vuoto = etichetta semplice di prova
+
+// Buste: due disegni che si alternano ogni mezzo secondo, e i frame dell'apertura in ordine (chiusa → aperta)
+const BUSTA_IDLE = ["disegni/idle-1.png", "disegni/idle-2.png"];
+const BUSTA_APERTURA = ["disegni/apertura-1.png", "disegni/apertura-2.png", "disegni/apertura-3.png", "disegni/apertura-4.png"];
+const MS_FRAME = 140;         // durata di ogni frame dell'apertura (millisecondi)
 const SBLOCCA_TUTTO = true;   // true = puoi aprire tutto per provare. Mettilo a false prima di condividere!
 
 // Foto segnaposto per la prova: quando hai le tue, scrivi "foto/nome.jpg" al posto di prova(n)
@@ -106,22 +110,26 @@ const prova = n => "data:image/svg+xml;utf8," + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8b44c"/><stop offset="1" stop-color="#b8402f"/></linearGradient></defs><rect width="600" height="420" fill="url(#g)"/><text x="300" y="230" font-family="Georgia" font-size="48" fill="#fff" text-anchor="middle">Foto del giorno ${n}</text></svg>`);
 
 const GIORNI = [
-  { data:"11-26", pos:[14,22], disegno:"", tipo:"canzone",   brano:"Titolo della canzone", link:"https://music.youtube.com" },
-  { data:"11-27", pos:[26,22], disegno:"", tipo:"messaggio", msg:"Scrivi qui il tuo messaggio per questo giorno." },
-  { data:"11-28", pos:[38,22], disegno:"", tipo:"foto",      img:prova(3), didascalia:"12 agosto 2023" },
-  { data:"11-29", pos:[50,22], disegno:"", tipo:"foto",      img:prova(4) },
-  { data:"11-30", pos:[62,22], disegno:"", tipo:"canzone",   brano:"Un’altra canzone", link:"https://music.youtube.com" },
-  { data:"12-01", pos:[74,22], disegno:"", tipo:"messaggio", msg:"Ti voglio bene! 💛" },
-  { data:"12-02", pos:[86,22], disegno:"", tipo:"foto",      img:prova(7) },
-  { data:"12-03", pos:[14,52], disegno:"", tipo:"canzone",   brano:"Ancora musica", link:"https://music.youtube.com" },
-  { data:"12-04", pos:[26,52], disegno:"", tipo:"messaggio", msg:"Oggi ti regalo un abbraccio lunghissimo." },
-  { data:"12-05", pos:[38,52], disegno:"", tipo:"messaggio", msg:"Pensavo a una cosa che mi hai detto…" },
-  { data:"12-06", pos:[50,52], disegno:"", tipo:"foto",      img:prova(11), didascalia:"Natale 2022" },
-  { data:"12-07", pos:[62,52], disegno:"", tipo:"canzone",   brano:"La nostra canzone", link:"https://music.youtube.com" },
-  { data:"12-08", pos:[74,52], disegno:"", tipo:"foto",      img:prova(13) },
-  { data:"12-09", pos:[86,52], disegno:"", tipo:"messaggio", msg:"Ultimo regalo! Ti aspetta una sorpresa vera. 🎁" },
+  { data:"11-26", pos:[14,22], tipo:"canzone",   brano:"Titolo della canzone", link:"https://music.youtube.com" },
+  { data:"11-27", pos:[26,22], tipo:"messaggio", msg:"Scrivi qui il tuo messaggio per questo giorno." },
+  { data:"11-28", pos:[38,22], tipo:"foto",      img:prova(3), didascalia:"12 agosto 2023" },
+  { data:"11-29", pos:[50,22], tipo:"foto",      img:prova(4) },
+  { data:"11-30", pos:[62,22], tipo:"canzone",   brano:"Un’altra canzone", link:"https://music.youtube.com" },
+  { data:"12-01", pos:[74,22], tipo:"messaggio", msg:"Ti voglio bene! 💛" },
+  { data:"12-02", pos:[86,22], tipo:"foto",      img:prova(7) },
+  { data:"12-03", pos:[14,52], tipo:"canzone",   brano:"Ancora musica", link:"https://music.youtube.com" },
+  { data:"12-04", pos:[26,52], tipo:"messaggio", msg:"Oggi ti regalo un abbraccio lunghissimo." },
+  { data:"12-05", pos:[38,52], tipo:"messaggio", msg:"Pensavo a una cosa che mi hai detto…" },
+  { data:"12-06", pos:[50,52], tipo:"foto",      img:prova(11), didascalia:"Natale 2022" },
+  { data:"12-07", pos:[62,52], tipo:"canzone",   brano:"La nostra canzone", link:"https://music.youtube.com" },
+  { data:"12-08", pos:[74,52], tipo:"foto",      img:prova(13) },
+  { data:"12-09", pos:[86,52], tipo:"messaggio", msg:"Ultimo regalo! Ti aspetta una sorpresa vera. 🎁" },
 ];
 /* ===================== fine parte da modificare ===================== */
+
+// Misure dei frame di apertura (640 x 695): dove sta la busta chiusa dentro il frame
+const CHIUSA_TOP = 0.348, CHIUSA_H = 0.652;
+[...BUSTA_IDLE, ...BUSTA_APERTURA].forEach(src => { new Image().src = src; });  // precarico i disegni
 
 const params = new URLSearchParams(location.search);
 const editMode = params.has("sposta");
@@ -131,7 +139,6 @@ if (editMode) document.body.classList.add("edit");
 
 const $ = id => document.getElementById(id);
 const stage = $("stage"), overlay = $("overlay"), scene = $("scene"), content = $("content");
-const leafL = $("leafL"), leafR = $("leafR");
 stage.style.setProperty("--ratio", RATIO);
 
 let opened = [];
@@ -151,8 +158,11 @@ setInterval(() => refreshers.forEach(f => f()), 30000); // se la pagina resta ap
 
 GIORNI.forEach(g => {
   const b = document.createElement("button");
-  b.className = "door" + (g.disegno ? " drawn" : "");
-  if (g.disegno) b.style.backgroundImage = `url("${g.disegno}")`; else b.textContent = sigla(g);
+  b.className = "door";
+  const idle = el("div", { className: "idle" }, b);
+  BUSTA_IDLE.forEach((src, i) => el("img", { className: "i" + i, src, alt: "", draggable: false }, idle));
+  idle.style.setProperty("--d", `-${Math.random().toFixed(2)}s`);   // ogni busta parte sfasata
+  el("span", { className: "giorno", textContent: sigla(g) }, b);
   b.style.left = g.pos[0] + "%"; b.style.top = g.pos[1] + "%";
   b.setAttribute("aria-label", titolo(g));
   const refresh = () => {
@@ -202,26 +212,55 @@ function openGift(g, doorEl) {
     el("p", { textContent: g.msg || "" }, content);
   }
 
-  // 2) le ante riprendono l'aspetto della casella cliccata
-  [leafL, leafR].forEach(l => {
-    l.classList.toggle("drawn", !!g.disegno);
-    l.style.backgroundImage = g.disegno ? `url("${g.disegno}")` : "";
-    l.firstElementChild.textContent = g.disegno ? "" : sigla(g);
-  });
-
-  // 3) la casella vola al centro e ingrandisce, poi le ante si aprono
+  // 2) la busta vola al centro e si apre frame dopo frame
+  if (envEl) envEl.remove();
   scene.classList.remove("open");
   overlay.classList.add("on");
-  if (reduceMotion) { scene.classList.add("open"); return; }
-  const from = doorEl.getBoundingClientRect(), to = scene.getBoundingClientRect();
+  if (reduceMotion) { envEl = null; scene.classList.add("open"); return; }
+  const last = BUSTA_APERTURA[BUSTA_APERTURA.length - 1];
+  const mine = envEl = el("div", { id: "env" }, overlay);
+  const f = el("img", { className: "f", src: BUSTA_APERTURA[0], alt: "" }, mine);
+  el("img", { className: "back", src: last, alt: "" }, mine);
+  const carta = el("div", { className: "carta" }, mine);
+  el("img", { className: "front", src: last, alt: "" }, mine);
+  const alive = () => envEl === mine;
+
+  const to = mine.getBoundingClientRect(), from = doorEl.getBoundingClientRect();
+  const cy = CHIUSA_TOP + CHIUSA_H / 2;                      // centro della busta chiusa dentro il frame
+  mine.style.transformOrigin = `50% ${cy * 100}%`;
   const dx = (from.left + from.width / 2) - (to.left + to.width / 2);
-  const dy = (from.top + from.height / 2) - (to.top + to.height / 2);
-  scene.animate(
-    [{ transform: `translate(${dx}px,${dy}px) scale(${from.width / to.width},${from.height / to.height})` }, { transform: "none" }],
+  const dy = (from.top + from.height / 2) - (to.top + to.height * cy);
+  mine.animate(
+    [{ transform: `translate(${dx}px,${dy}px) scale(${from.width / to.width})` }, { transform: "none" }],
     { duration: 650, easing: "cubic-bezier(.2,.8,.2,1)" }
-  ).onfinish = () => scene.classList.add("open");
+  ).onfinish = () => {
+    if (!alive()) return;
+    BUSTA_APERTURA.slice(1).forEach((src, i) => setTimeout(() => { if (alive()) f.src = src; }, (i + 1) * MS_FRAME));
+    setTimeout(() => { if (alive()) esceBiglietto(); }, BUSTA_APERTURA.length * MS_FRAME);
+  };
+
+  // 3) il biglietto esce dalla busta...
+  function esceBiglietto() {
+    mine.classList.add("fine");
+    const h = mine.getBoundingClientRect().height;
+    carta.animate([{ transform: "none" }, { transform: `translateY(${-h * 0.2}px)` }],
+      { duration: 700, easing: "ease-out", fill: "forwards" }).onfinish = () => { if (alive()) rivela(); };
+  }
+  // 4) ...e si ingrandisce fino a diventare la sorpresa
+  function rivela() {
+    const c = carta.getBoundingClientRect();
+    scene.classList.add("open");
+    const s = scene.getBoundingClientRect();
+    scene.animate(
+      [{ transform: `translate(${c.left + c.width / 2 - (s.left + s.width / 2)}px,${c.top + c.height / 2 - (s.top + s.height / 2)}px) scale(${c.width / s.width},${c.height / s.height})`, opacity: 0 },
+       { transform: "none", opacity: 1 }],
+      { duration: 650, easing: "cubic-bezier(.2,.8,.2,1)" });
+    mine.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" })
+      .onfinish = () => { mine.remove(); if (envEl === mine) envEl = null; };
+  }
 }
-function closeGift() { overlay.classList.remove("on"); scene.classList.remove("open"); }
+let envEl = null;
+function closeGift() { overlay.classList.remove("on"); scene.classList.remove("open"); if (envEl) { envEl.remove(); envEl = null; } }
 overlay.addEventListener("click", e => { if (e.target === overlay) closeGift(); });
 addEventListener("keydown", e => { if (e.key === "Escape") closeGift(); });
 
