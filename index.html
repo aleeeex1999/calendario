@@ -346,24 +346,24 @@ function openGift(g, doorEl) {
 
   /* Foto originali: nessun ridimensionamento Canvas */
   if (g.tipo === "foto") {
-    const foto = el("img", {
+    const contenitoreFoto = el("div", {
+      style: "position:relative; display:inline-block; max-width:100%; max-height:55%;"
+    }, retro);
+  
+    el("img", {
       className: "scatto",
       src: g.img,
       alt: testo
-    }, retro);
+    }, contenitoreFoto);
   
     const scotch = el("span", {
       className: "scotch-foto"
-    }, retro);
+    }, contenitoreFoto);
   
-    const immagineScotch = el("img", {
+    el("img", {
       src: etichettaPronta || ETICHETTA,
       alt: ""
     }, scotch);
-  
-    immagineScotch.onerror = () => {
-      immagineScotch.src = ETICHETTA;
-    };
   }
 
   const did = el("div", { className: "did" }, retro);
