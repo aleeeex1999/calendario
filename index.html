@@ -110,7 +110,7 @@ const ETICHETTA = "disegni/etichetta.png";   // il pezzetto di carta "clicca qui
 const LARGHEZZA_ETICHETTA = 50;  // larghezza di "clicca qui!" sul foglio, in % della larghezza del foglio (più alto = più grande)
 const SCRITTA_ETICHETTA = "clicca qui!";  // scritta messa dal codice sopra il disegno dell'etichetta. Se la scritta è già nel disegno, metti ""
 const COLORE_SCRITTA = "#000000";          // colore di questa scritta
-const DIMENSIONE_SCRITTA = 0.8;              // 1 = normale, 1.3 = più grande
+const DIMENSIONE_SCRITTA = 0.6;              // 1 = normale, 1.3 = più grande
 const MS_LETTERA = 35;        // velocità della macchina da scrivere (millisecondi per lettera)
 
 // Puntina (cartella "disegni"): sta in alto al centro del foglietto e si stacca quando lo apri
@@ -120,10 +120,10 @@ const PIN_ALTEZZA = 10;        // dove sta il centro della puntina, in % dall'al
 
 // Testi e grandezze
 const DIMENSIONE_DATA = 1;    // numero e mese sul foglietto: 1 = normale, 1.3 = più grandi, 0.8 = più piccoli
-const DIMENSIONE_TESTO = 0.7;   // messaggi e didascalie sul foglio aperto: 1 = normale, 1.2 = più grandi
+const DIMENSIONE_TESTO = 0.6;   // messaggi e didascalie sul foglio aperto: 1 = normale, 1.2 = più grandi
 const MARGINE_LATERALE = 18;  // margine destro e sinistro del testo sul foglio, in % (più alto = testo più stretto)
 const COLORE_TESTO = "#000000";   // colore di messaggi e didascalie
-const DIMENSIONE_MESSAGGIO = 0.85; // grandezza del testo sul cartello: 1 = normale (si rimpicciolisce da solo se non ci sta), 1.2 = più grande
+const DIMENSIONE_MESSAGGIO = 0.8; // grandezza del testo sul cartello: 1 = normale (si rimpicciolisce da solo se non ci sta), 1.2 = più grande
 
 const COLORE_DATE = "#000000";      // colore di numero e mese scritti sul foglietto
 const COLORE_PAGINA = "#000000";    // colore dello sfondo della pagina (la parte sotto/intorno alla foto)
@@ -133,24 +133,24 @@ const MESSAGGIO_FINALE = "una piccola sorpresa ogni giorno per quando sarò via!
 // Cartello con il messaggio (cartella "disegni"): a destra, a metà altezza
 const MESSAGGIO_IMG = "disegni/messaggio.png";   // vuoto ("") = niente cartello
 const SEGNO_ALTEZZA = 70;        // altezza del cartello, in % dell'altezza dello schermo
-const SEGNO_DAL_BORDO = 4;       // quanto il cartello sta staccato dal bordo destro, in % della larghezza dello schermo (0 = attaccato al bordo; più alto = più a sinistra)
+const SEGNO_DAL_BORDO = 10;       // quanto il cartello sta staccato dal bordo destro, in % della larghezza dello schermo (0 = attaccato al bordo; più alto = più a sinistra)
 const SEGNO_LARGHEZZA_MAX = 40;  // il cartello non occupa mai più di questa % della larghezza dello schermo
 // Dove sta il foglio di carta nell'immagine (in % dell'immagine senza i margini trasparenti): centro, larghezza, altezza, inclinazione in gradi
 const MESSAGGIO_RETTANGOLO = { x: 43.2, y: 34.8, w: 46, h: 44, rot: -16 };
 const GIORNI = [
   { data:"11-26", tipo:"canzone",   brano:"hai due occhi giganti che luccicano, guardano i miei", link:"https://open.spotify.com/intl-it/track/39J4IyWQJWcBPU6tMnlD07?si=21a4ecfae375446f" },
   { data:"11-27", tipo:"messaggio", msg:"i am looking inward and finding the image of caterina everywhere!" },
-  { data:"11-28", tipo:"foto",      img:"foto/28.png", didascalia:"noi versione serata romantica" },
-  { data:"11-29", tipo:"foto",      img:"foto/29.png", didascalia:"si festeggia il primo maggio :P" },
+  { data:"11-28", tipo:"foto",      img:"foto/28.png", didascalia:"la nostra prima serata da coppia romantica in quel di bologna" },
+  { data:"11-29", tipo:"foto",      img:"foto/29.png", didascalia:"si festeggia sempre il primo maggio!" },
   { data:"11-30", tipo:"canzone",   brano:"this could be the end of wanting", link:"https://open.spotify.com/intl-it/track/6TSHGfV9E66qCNu4UP6xZu?si=21931ec4fbc44803" },
   { data:"12-01", tipo:"messaggio", msg:"light of my eyes and delight of my soul that you are!" },
   { data:"12-02", tipo:"foto",      img:"foto/2.png", didascalia:"UN ANNO INSIEMEEE" },
   { data:"12-03", tipo:"canzone",   brano:"forever is a feeling and i know it well", link:"https://open.spotify.com/intl-it/track/0r1Hes7jhihnSh8ql9XGya?si=980945050bc34fe6" },
-  { data:"12-04", tipo:"messaggio", msg:"ti manco amore mio? tra una settimana sono da te...ci penso tutto il tempo! ti amooooo" },
+  { data:"12-04", tipo:"messaggio", msg:"ti manco amore mio? tra una settimana sono da te... ci penso tutto il tempo! ti amooooo" },
   { data:"12-05", tipo:"messaggio", msg:"i cannot allow myself any sort of happiness that does not, in some way or another, involve you." },
-  { data:"12-06", tipo:"foto",      img:"foto/6.png", didascalia:"la mia foto preferita!!!" },
+  { data:"12-06", tipo:"foto",      img:"foto/6.png", didascalia:"io e mia moglie !!!" },
   { data:"12-07", tipo:"canzone",   brano:"our days and nights are perfumed with obsession", link:"https://open.spotify.com/intl-it/track/5q4BpnMrYEFzLO0dYODj6J?si=a622c19c8309426c" },
-  { data:"12-08", tipo:"foto",      img:"foto/8.png", didascalia:"noi x sempre" },
+  { data:"12-08", tipo:"foto",      img:"foto/8.png", didascalia:"non vedo l'ora di passare tutto il resto dei nostri compleanni con te!" },
   { data:"12-09", tipo:"messaggio", msg:"il mio viaggio giunge al termine e anche questo piccolo calendario! non vedo l'ora di rivederti amore mio dolce, a tra pochissimooooo" },
 ];
 /* ===================== fine parte da modificare ===================== */
