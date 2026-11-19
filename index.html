@@ -73,17 +73,20 @@
       calc(var(--u) * 2.5)
       rgba(0, 0, 0, .35);
   }
+  
   #foglio .retro {
   opacity:1 !important;
+  filter: none !important;
   }
+  
   #foglio .did { white-space:pre-line; }
   #foglio .nascosto { color:transparent; }
 
   /* Etichetta delle canzoni: più piccola, in basso e leggermente decentrata */
   #foglio .etichetta {
     position:absolute;
-    right:12%;
-    bottom:12%;
+    right:18%;
+    bottom:18%;
     width:calc(var(--u) * var(--le, 35));
     display:block;
     color:inherit;
