@@ -51,7 +51,7 @@
                    font-size:calc(var(--u) * 7.5); line-height:1.25; color:var(--testo, var(--ink)); }
   #foglio .scatto {
     display: block;
-  
+    position: relative;
     /* Dimensioni di visualizzazione */
     width: auto;
     height: auto;
@@ -103,6 +103,22 @@
   #foglio .data i { font-size:calc(var(--u) * 18 * var(--kd, 1)); }
   #foglio .pin { transform:translate(-50%,-50%) translateZ(2px); backface-visibility:hidden; }
   #foglio .etichetta img { width:100%; display:block; }
+  /* Scotch sopra le fotografie */
+  #foglio .scotch-foto {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: calc(var(--u) * 35);
+    transform: translate(-50%, -50%) rotate(-5deg);
+    z-index: 4;
+    pointer-events: none;
+  }
+  
+  #foglio .scotch-foto img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
   #foglio .etichetta .scritta { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; white-space:nowrap;
                                 font-size:calc(var(--u) * 7 * var(--ds, 1)); color:var(--scr, #000); pointer-events:none; }
 
@@ -330,7 +346,24 @@ function openGift(g, doorEl) {
 
   /* Foto originali: nessun ridimensionamento Canvas */
   if (g.tipo === "foto") {
-    el("img", { className: "scatto", src: g.img, alt: testo }, retro);
+    const foto = el("img", {
+      className: "scatto",
+      src: g.img,
+      alt: testo
+    }, retro);
+  
+    const scotch = el("span", {
+      className: "scotch-foto"
+    }, retro);
+  
+    const immagineScotch = el("img", {
+      src: etichettaPronta || ETICHETTA,
+      alt: ""
+    }, scotch);
+  
+    immagineScotch.onerror = () => {
+      immagineScotch.src = ETICHETTA;
+    };
   }
 
   const did = el("div", { className: "did" }, retro);
