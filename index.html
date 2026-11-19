@@ -11,9 +11,14 @@
   /* Tutta la pagina è una sola schermata: lo sfondo si adatta (intero) allo schermo, senza scorrere */
   html, body { margin:0; height:100%; overflow:hidden; background:var(--night); font-family:var(--font); color:var(--ink); }
   body { display:flex; align-items:center; justify-content:center; }
-  #stage { --W:min(100vw, calc(100vh * var(--ratio))); --su:calc(var(--W) / 100);   /* --su = 1% della larghezza dello sfondo */
-           position:relative; flex:none; width:var(--W); aspect-ratio:var(--ratio);
-           background: url("sfondo.jpg") center/100% 100% no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
+  #stage {
+  --W:100vw;
+  --su:calc(var(--W) / 100);
+  position:relative;
+  flex:none;
+  width:100vw;
+  height:100dvh;
+  background:url("sfondo.jpg") center/cover no-repeat; }
 
   /* Foglietto sulla foto: vibra (0° ↔ 4° ogni mezzo secondo), con la data sopra */
   @supports (height:100dvh) { body { height:100dvh; } #stage { --W:min(100vw, calc(100dvh * var(--ratio))); } }
@@ -59,6 +64,26 @@
   #foglio .pin { transform:translate(-50%,-50%) translateZ(2px); backface-visibility:hidden; }
   #foglio .etichetta img { width:100%; display:block; }
 
+  #foglio .etichetta {
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  }
+  
+  #foglio .etichetta img {
+    width:100%;
+    display:block;
+  }
+  
+  #foglio .etichetta .scritta-link {
+    position:absolute;
+    font-size:calc(var(--u) * 7);
+    color:#3a2a22;
+    text-align:center;
+    white-space:nowrap;
+  }
+
   #finale { position:absolute; left:50%; bottom:2.5%; transform:translateX(-50%); width:84%; text-align:center; white-space:pre-line;
             font-size:calc(var(--su) * var(--dm, 2.1)); line-height:1.3; color:var(--msg, #fff8ec); pointer-events:none; }
   #finale:empty { display:none; }
@@ -90,7 +115,7 @@ const SBLOCCA_TUTTO = true;   // true = puoi aprire tutto per provare. Mettilo a
 // Disposizione dei foglietti: tre righe (5 + 4 + 5)
 const LARGHEZZA_FOGLIO = 14;  // larghezza di ogni foglietto, in % della larghezza dello sfondo (più grande = foglietti più grandi)
 const FILE = [5, 4, 5];       // quanti foglietti per riga
-const Y_RIGHE = [26, 52, 78]; // altezza di ogni riga, in % dell'altezza dello sfondo
+const Y_RIGHE = [18, 42, 66]; // altezza di ogni riga, in % dell'altezza dello sfondo
 const PASSO_X = 17;           // distanza orizzontale tra due foglietti (in % della larghezza)
 
 // Un foglietto diverso per ogni tipo di sorpresa (cartella "disegni")
@@ -101,20 +126,20 @@ const MS_LETTERA = 35;        // velocità della macchina da scrivere (milliseco
 
 // Puntina (cartella "disegni"): sta in alto al centro del foglietto e si stacca quando lo apri
 const PIN = "disegni/pin.png";   // vuoto ("") = niente puntine
-const PIN_LARGHEZZA = 22;     // larghezza della puntina, in % della larghezza del foglietto
-const PIN_ALTEZZA = 8;        // dove sta il centro della puntina, in % dall'alto del foglietto
+const PIN_LARGHEZZA = 35;     // larghezza della puntina, in % della larghezza del foglietto
+const PIN_ALTEZZA = 15;        // dove sta il centro della puntina, in % dall'alto del foglietto
 
 // Testi e grandezze
 const DIMENSIONE_DATA = 1;    // numero e mese sul foglietto: 1 = normale, 1.3 = più grandi, 0.8 = più piccoli
-const DIMENSIONE_TESTO = 1;   // messaggi e didascalie sul foglio aperto: 1 = normale, 1.2 = più grandi
+const DIMENSIONE_TESTO = 0.8;   // messaggi e didascalie sul foglio aperto: 1 = normale, 1.2 = più grandi
 const MARGINE_LATERALE = 18;  // margine destro e sinistro del testo sul foglio, in % (più alto = testo più stretto)
-const COLORE_TESTO = "#3a2a22";   // colore di messaggi e didascalie
-const DIMENSIONE_MESSAGGIO = 2.1; // grandezza del messaggio in fondo, in % della larghezza dello sfondo
+const COLORE_TESTO = "#230C0F";   // colore di messaggi e didascalie
+const DIMENSIONE_MESSAGGIO = 2.0; // grandezza del messaggio in fondo, in % della larghezza dello sfondo
 
-const COLORE_DATE = "#80478E";      // colore di numero e mese scritti sul foglietto
+const COLORE_DATE = "#230C0F";      // colore di numero e mese scritti sul foglietto
 const COLORE_PAGINA = "#1d2233";    // colore dello sfondo della pagina (la parte sotto/intorno alla foto)
-const COLORE_MESSAGGIO = "#fff8ec"; // colore del messaggio in fondo alla pagina
-const MESSAGGIO_FINALE = "Scrivi qui il tuo piccolo messaggio.";  // compare in fondo alla pagina; vuoto = niente
+const COLORE_MESSAGGIO = "#230C0F"; // colore del messaggio in fondo alla pagina
+const MESSAGGIO_FINALE = "una piccola sorpresa ogni giorno fino a quando sono via!";  // compare in fondo alla pagina; vuoto = niente
 
 const GIORNI = [
   { data:"11-26", tipo:"canzone",   brano:"hai due occhi giganti che luccicano, guardano i miei", link:"https://open.spotify.com/intl-it/track/39J4IyWQJWcBPU6tMnlD07?si=21a4ecfae375446f" },
@@ -263,9 +288,8 @@ function openGift(g, doorEl) {
   prepara(did, testo);
   if (g.tipo === "canzone") {                                                                    // etichetta: appare subito
     const a = el("a", { className: "etichetta", href: g.link, target: "_blank", rel: "noopener" }, retro);
-    const im = el("img", { src: ETICHETTA, alt: "clicca qui!" }, a);
-    im.onerror = () => { im.remove(); a.classList.add("base"); a.textContent = "clicca qui!"; };   // se il disegno non si carica, scritta semplice
-  }
+    el("img", { src: ETICHETTA, alt: "" }, a);
+    el("span", { className: "scritta-link", textContent: "clicca qui" }, a);
 
   fg.style.transform = FINE;
   const fatto = () => { pronto = true; scrivi(did, testo); };
