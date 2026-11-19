@@ -10,13 +10,18 @@
   * { box-sizing: border-box; }
   /* Tutta la pagina è una sola schermata: lo sfondo si adatta (intero) allo schermo, senza scorrere */
   html, body { margin:0; height:100%; overflow:hidden; background:var(--night); font-family:var(--font); color:var(--ink); }
-  body { display:flex; align-items:center; justify-content:center; }
   #fondo { position:fixed; inset:0; background: url("sfondo.jpg") center/cover no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
-  #stage { --W:min(100vw, calc(100vh * var(--ratio))); --su:calc(var(--W) / 100);   /* --su = 1% della larghezza del riquadro dei foglietti */
-           position:relative; z-index:1; flex:none; width:var(--W); aspect-ratio:var(--ratio); }
+  #layout { position:relative; z-index:1; display:flex; align-items:center; width:100%; height:100%; }
+  #area { flex:1; min-width:0; height:100%; display:flex; align-items:center; justify-content:center; }   /* zona a sinistra, con i foglietti */
+  #stage { --su:calc(var(--W) / 100);   /* --su = 1% della larghezza del riquadro dei foglietti (--W lo calcola il codice) */
+           position:relative; flex:none; width:var(--W); aspect-ratio:var(--ratio); }
+  /* Cartello a destra, a metà altezza, appoggiato al bordo dello schermo: il messaggio è scritto sul foglio di carta */
+  #segno { flex:none; position:relative; visibility:hidden; pointer-events:none; }
+  #segno.pronto { visibility:visible; }
+  #segno img { display:block; width:100%; height:100%; }
 
   /* Foglietto sulla foto: vibra (0° ↔ 4° ogni mezzo secondo), con la data sopra */
-  @supports (height:100dvh) { body { height:100dvh; } #stage { --W:min(100vw, calc(100dvh * var(--ratio))); } }
+  @supports (height:100dvh) { body { height:100dvh; } }
 
   .door { position:absolute; width:calc(var(--lf) * 1%); transform:translate(-50%,-50%); padding:0; border:0; background:none;
           cursor:pointer; line-height:0; font:inherit; transition:transform .2s, opacity .3s; }
@@ -61,9 +66,9 @@
   #foglio .etichetta .scritta { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; white-space:nowrap;
                                 font-size:calc(var(--u) * 8 * var(--ds, 1)); color:var(--scr, #000); pointer-events:none; }
 
-  #finale { position:absolute; left:50%; bottom:2.5%; transform:translateX(-50%); width:84%; text-align:center; white-space:pre-line;
-            font-size:calc(var(--su) * var(--dm, 2.1)); line-height:1.3; color:var(--msg, #fff8ec); pointer-events:none; }
-  #finale:empty { display:none; }
+  #finale { position:absolute; left:calc(var(--rx) * 1%); top:calc(var(--ry) * 1%); width:calc(var(--rw) * 1%); height:calc(var(--rh) * 1%);
+            transform:translate(-50%,-50%) rotate(var(--rr)); display:flex; align-items:center; justify-content:center;
+            text-align:center; white-space:pre-line; line-height:1.25; color:var(--msg, #000); }
 
   #bar { position:fixed; left:8px; top:8px; z-index:20; display:none; gap:8px; background:#fff; padding:8px; border-radius:8px; font:14px sans-serif; }
   body.edit #bar { display:flex; align-items:center; }
@@ -75,7 +80,10 @@
 
 <div id="bar"><span>Modalità sposta: trascina i foglietti</span><button id="copy">Copia posizioni</button></div>
 <div id="fondo"></div>
-<div id="stage"><div id="finale"></div></div>
+<div id="layout">
+  <div id="area"><div id="stage"></div></div>
+  <div id="segno"><img id="segnoimg" alt=""><div id="finale"><span></span></div></div>
+</div>
 <div id="overlay" role="dialog" aria-modal="true"></div>
 
 <script>
@@ -86,15 +94,15 @@
      "foto"      → usa img (percorso della foto) e, se vuoi, didascalia (es. la data della foto)
      "canzone"   → usa brano (titolo) e link (indirizzo della canzone)
    ===================================================================== */
-const RATIO = 1.6;            // larghezza ÷ altezza della tua immagine di sfondo
+const RATIO = 1.6;            // proporzioni (larghezza ÷ altezza) del riquadro in cui stanno i foglietti: lascia 1.6
 const ANNO = 2026;
 const SBLOCCA_TUTTO = true;   // true = puoi aprire tutto per provare. Mettilo a false prima di condividere!
 
 // Disposizione dei foglietti: tre righe (5 + 4 + 5)
-const LARGHEZZA_FOGLIO = 14;  // larghezza di ogni foglietto, in % della larghezza dello sfondo (più grande = foglietti più grandi)
+const LARGHEZZA_FOGLIO = 16;  // larghezza di ogni foglietto, in % della larghezza dello sfondo (più grande = foglietti più grandi)
 const FILE = [5, 4, 5];       // quanti foglietti per riga
-const Y_RIGHE = [18, 44, 70]; // altezza di ogni riga, in % dell'altezza dello sfondo
-const PASSO_X = 17;           // distanza orizzontale tra due foglietti (in % della larghezza)
+const Y_RIGHE = [17, 48, 79]; // altezza di ogni riga, in % dell'altezza dello sfondo
+const PASSO_X = 19;           // distanza orizzontale tra due foglietti (in % della larghezza)
 
 // Un foglietto diverso per ogni tipo di sorpresa (cartella "disegni")
 const FOGLI = { foto: "disegni/busta_1.png", canzone: "disegni/busta_2.png", messaggio: "disegni/busta_3.png" };
@@ -115,13 +123,19 @@ const DIMENSIONE_DATA = 1;    // numero e mese sul foglietto: 1 = normale, 1.3 =
 const DIMENSIONE_TESTO = 0.8;   // messaggi e didascalie sul foglio aperto: 1 = normale, 1.2 = più grandi
 const MARGINE_LATERALE = 18;  // margine destro e sinistro del testo sul foglio, in % (più alto = testo più stretto)
 const COLORE_TESTO = "#000000";   // colore di messaggi e didascalie
-const DIMENSIONE_MESSAGGIO = 2.0; // grandezza del messaggio in fondo, in % della larghezza dello sfondo
+const DIMENSIONE_MESSAGGIO = 1; // grandezza del testo sul cartello: 1 = normale (si rimpicciolisce da solo se non ci sta), 1.2 = più grande
 
 const COLORE_DATE = "#000000";      // colore di numero e mese scritti sul foglietto
 const COLORE_PAGINA = "#000000";    // colore dello sfondo della pagina (la parte sotto/intorno alla foto)
 const COLORE_MESSAGGIO = "#000000"; // colore del messaggio in fondo alla pagina
-const MESSAGGIO_FINALE = "una piccola sorpresa ogni giorno per quando sarò via!";  // compare in fondo alla pagina; vuoto = niente
+const MESSAGGIO_FINALE = "una piccola sorpresa ogni giorno per quando sarò via!";  // compare sul cartello a destra; vuoto = niente
 
+// Cartello con il messaggio (cartella "disegni"): a destra, a metà altezza
+const MESSAGGIO_IMG = "disegni/messaggio.png";   // vuoto ("") = niente cartello
+const SEGNO_ALTEZZA = 80;        // altezza del cartello, in % dell'altezza dello schermo
+const SEGNO_LARGHEZZA_MAX = 40;  // il cartello non occupa mai più di questa % della larghezza dello schermo
+// Dove sta il foglio di carta nell'immagine (in % dell'immagine senza i margini trasparenti): centro, larghezza, altezza, inclinazione in gradi
+const MESSAGGIO_RETTANGOLO = { x: 43.2, y: 34.8, w: 46, h: 44, rot: -16 };
 const GIORNI = [
   { data:"11-26", tipo:"canzone",   brano:"hai due occhi giganti che luccicano, guardano i miei", link:"https://open.spotify.com/intl-it/track/39J4IyWQJWcBPU6tMnlD07?si=21a4ecfae375446f" },
   { data:"11-27", tipo:"messaggio", msg:"i am looking inward and finding the image of caterina everywhere!" },
@@ -147,14 +161,14 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (editMode) document.body.classList.add("edit");
 
 const $ = id => document.getElementById(id);
-const stage = $("stage"), overlay = $("overlay");
+const stage = $("stage"), overlay = $("overlay"), area = $("area"), segno = $("segno"), segnoImg = $("segnoimg"), finale = $("finale");
 const root = document.documentElement;
 stage.style.setProperty("--ratio", RATIO);
 stage.style.setProperty("--lf", LARGHEZZA_FOGLIO);
 root.style.setProperty("--data", COLORE_DATE);
 root.style.setProperty("--night", COLORE_PAGINA);
 root.style.setProperty("--msg", COLORE_MESSAGGIO);
-$("finale").textContent = MESSAGGIO_FINALE;
+finale.firstElementChild.textContent = MESSAGGIO_FINALE;
 root.style.setProperty("--pinw", PIN_LARGHEZZA + "%"); root.style.setProperty("--piny", PIN_ALTEZZA + "%");
 root.style.setProperty("--kd", DIMENSIONE_DATA); root.style.setProperty("--mx", MARGINE_LATERALE);
 root.style.setProperty("--testo", COLORE_TESTO); root.style.setProperty("--dm", DIMENSIONE_MESSAGGIO); root.style.setProperty("--le", LARGHEZZA_ETICHETTA);
@@ -321,6 +335,54 @@ function closeGift() {
 }
 overlay.addEventListener("click", e => { if (!e.target.closest("a")) closeGift(); });
 addEventListener("keydown", e => { if (e.key === "Escape") closeGift(); });
+
+/* ---------- layout: foglietti a sinistra, cartello con il messaggio a destra ---------- */
+let segnoAr = 0.865;                                    // proporzioni del cartello (larghezza ÷ altezza), aggiornate quando l'immagine è pronta
+Object.entries(MESSAGGIO_RETTANGOLO).forEach(([k, v]) => finale.style.setProperty("--r" + ({ x: "x", y: "y", w: "w", h: "h", rot: "r" })[k], k === "rot" ? v + "deg" : v));
+
+function ritagliaImmagine(src) {                        // toglie i margini trasparenti, così il cartello tocca davvero il bordo
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      let out = { src, ar: im.naturalWidth / im.naturalHeight };
+      try {
+        const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas"); c.width = w; c.height = h;
+        const x = c.getContext("2d"); x.drawImage(im, 0, 0);
+        const d = x.getImageData(0, 0, w, h).data;
+        let x0 = w, y0 = h, x1 = -1, y1 = -1;
+        for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) if (d[(y * w + i) * 4 + 3] > 20) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        if (x1 >= 0) {
+          const o = document.createElement("canvas"); o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
+          o.getContext("2d").drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height);
+          out = { src: o.toDataURL("image/png"), ar: o.width / o.height };
+        }
+      } catch (e) {}                                    // (es. aprendo il file dal computer senza server: uso l'immagine intera)
+      res(out);
+    };
+    im.onerror = () => res(null);
+    im.src = src;
+  });
+}
+function adattaTesto() {                                // il messaggio si rimpicciolisce da solo finché sta dentro il foglio di carta
+  const t = finale.firstElementChild;
+  let fz = segno.offsetHeight * 0.05 * DIMENSIONE_MESSAGGIO;
+  finale.style.fontSize = fz + "px";
+  for (let i = 0; i < 40 && fz > 7 && t.offsetHeight > finale.clientHeight; i++) { fz *= 0.94; finale.style.fontSize = fz + "px"; }
+}
+function disponi() {
+  const h = Math.min(innerHeight * SEGNO_ALTEZZA / 100, root.clientWidth * SEGNO_LARGHEZZA_MAX / 100 / segnoAr);
+  segno.style.height = h + "px"; segno.style.width = h * segnoAr + "px";
+  const r = area.getBoundingClientRect();               // la zona a sinistra: i foglietti stanno qui
+  stage.style.setProperty("--W", Math.min(r.width, r.height * RATIO) + "px");
+  adattaTesto();
+}
+if (MESSAGGIO_IMG) ritagliaImmagine(MESSAGGIO_IMG).then(r => {
+  if (r) { segnoImg.src = r.src; segnoAr = r.ar; } else segnoImg.style.display = "none";
+  segno.classList.add("pronto"); disponi();
+});
+else segno.style.display = "none";
+addEventListener("resize", disponi);
+disponi();
 
 /* ---------- modalità ?sposta=1 ---------- */
 function makeDraggable(b, g) {
