@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -8,19 +9,17 @@
   @font-face { font-family:"Crayons"; src:url("fonts/font.ttf") format("truetype"); font-display:swap; }
   :root { --font:"Crayons", Georgia, "Times New Roman", serif; --ink:#3a2a22; --night:#1d2233; }
   * { box-sizing: border-box; }
-  /* Tutta la pagina è una sola schermata: lo sfondo si adatta (intero) allo schermo, senza scorrere */
+
   html, body { margin:0; height:100%; overflow:hidden; background:var(--night); font-family:var(--font); color:var(--ink); }
   #fondo { position:fixed; inset:0; background: url("sfondo.jpg") center/cover no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
   #layout { position:relative; z-index:1; display:flex; align-items:center; width:100%; height:100%; }
-  #area { flex:1; min-width:0; height:100%; display:flex; align-items:center; justify-content:center; }   /* zona a sinistra, con i foglietti */
-  #stage { --su:calc(var(--W) / 100);   /* --su = 1% della larghezza del riquadro dei foglietti (--W lo calcola il codice) */
-           position:relative; flex:none; width:var(--W); aspect-ratio:var(--ratio); }
-  /* Cartello a destra, a metà altezza, appoggiato al bordo dello schermo: il messaggio è scritto sul foglio di carta */
+  #area { flex:1; min-width:0; height:100%; display:flex; align-items:center; justify-content:center; }
+  #stage { --su:calc(var(--W) / 100); position:relative; flex:none; width:var(--W); aspect-ratio:var(--ratio); }
+
   #segno { flex:none; position:relative; visibility:hidden; pointer-events:none; }
   #segno.pronto { visibility:visible; }
   #segno img { display:block; width:100%; height:100%; }
 
-  /* Foglietto sulla foto: vibra (0° ↔ 4° ogni mezzo secondo), con la data sopra */
   @supports (height:100dvh) { body { height:100dvh; } }
 
   .door { position:absolute; width:calc(var(--lf) * 1%); transform:translate(-50%,-50%); padding:0; border:0; background:none;
@@ -42,7 +41,6 @@
   .door.shake { animation:shake .4s; }
   @keyframes shake { 20%,60%{translate:-6px 0} 40%,80%{translate:6px 0} }
 
-  /* Foglio grande al centro: si gira di 180° e sul retro (a specchio) compare la sorpresa */
   #overlay { position:fixed; inset:0; display:none; background:rgba(15,18,30,.65); z-index:10; }
   #overlay.on { display:block; }
   #foglio { position:fixed; left:50%; top:50%; z-index:11; cursor:pointer; transform-style:preserve-3d; }
@@ -52,19 +50,34 @@
                    gap:calc(var(--u) * 4); padding:calc(var(--u) * 11) calc(var(--u) * var(--mx, 18));
                    font-size:calc(var(--u) * 7.5); line-height:1.25; color:var(--testo, var(--ink)); }
   #foglio .scatto { max-width:calc(var(--u) * 56); max-height:55%; width:auto; height:auto; transform:rotate(-3deg);
-                    box-shadow:0 calc(var(--u) * .8) calc(var(--u) * 2.5) rgba(0,0,0,.35); }
+                    box-shadow:0 calc(var(--u) * .8) calc(var(--u) * 2.5) rgba(0,0,0,.35);
+                    opacity:1; mix-blend-mode:normal; }
   #foglio .did { white-space:pre-line; }
   #foglio .nascosto { color:transparent; }
-  #foglio .etichetta { position:relative; width:calc(var(--u) * var(--le, 60)); display:block; color:inherit; text-decoration:none; }
-  #foglio .etichetta.base { background:#fff; padding:calc(var(--u) * 3); font-size:calc(var(--u) * 8); transform:rotate(-2deg);
+
+  /* Etichetta delle canzoni: più piccola, in basso e leggermente decentrata */
+  #foglio .etichetta {
+    position:absolute;
+    right:6%;
+    bottom:4%;
+    width:calc(var(--u) * var(--le, 35));
+    display:block;
+    color:inherit;
+    text-decoration:none;
+    transform:rotate(-10deg);
+    transform-origin:center;
+    z-index:3;
+  }
+
+  #foglio .etichetta.base { background:#fff; padding:calc(var(--u) * 3); font-size:calc(var(--u) * 8); transform:rotate(-10deg);
                             box-shadow:0 calc(var(--u) * .8) calc(var(--u) * 2.5) rgba(0,0,0,.3); }
-  #foglio .data { transform:translateZ(1px); backface-visibility:hidden; }       /* data sul davanti del foglio grande */
+  #foglio .data { transform:translateZ(1px); backface-visibility:hidden; }
   #foglio .data b { font-size:calc(var(--u) * 36 * var(--kd, 1)); }
   #foglio .data i { font-size:calc(var(--u) * 18 * var(--kd, 1)); }
   #foglio .pin { transform:translate(-50%,-50%) translateZ(2px); backface-visibility:hidden; }
   #foglio .etichetta img { width:100%; display:block; }
   #foglio .etichetta .scritta { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; white-space:nowrap;
-                                font-size:calc(var(--u) * 8 * var(--ds, 1)); color:var(--scr, #000); pointer-events:none; }
+                                font-size:calc(var(--u) * 7 * var(--ds, 1)); color:var(--scr, #000); pointer-events:none; }
 
   #finale { position:absolute; left:calc(var(--rx) * 1%); top:calc(var(--ry) * 1%); width:calc(var(--rw) * 1%); height:calc(var(--rh) * 1%);
             transform:translate(-50%,-50%) rotate(var(--rr)); display:flex; align-items:center; justify-content:center;
@@ -89,54 +102,50 @@
 <script>
 /* =====================================================================
    ✏️  QUI MODIFICHI TUTTO TU
-   Ogni giorno ha un "tipo" di sorpresa:
-     "messaggio" → usa msg
-     "foto"      → usa img (percorso della foto) e, se vuoi, didascalia (es. la data della foto)
-     "canzone"   → usa brano (titolo) e link (indirizzo della canzone)
    ===================================================================== */
-const RATIO = 1.6;            // proporzioni (larghezza ÷ altezza) del riquadro in cui stanno i foglietti: lascia 1.6
+const RATIO = 1.6;
 const ANNO = 2026;
-const SBLOCCA_TUTTO = true;   // true = puoi aprire tutto per provare. Mettilo a false prima di condividere!
+const SBLOCCA_TUTTO = true;
 
-// Disposizione dei foglietti: tre righe (5 + 4 + 5)
-const LARGHEZZA_FOGLIO = 16;  // larghezza di ogni foglietto, in % della larghezza dello sfondo (più grande = foglietti più grandi)
-const FILE = [5, 4, 5];       // quanti foglietti per riga
-const Y_RIGHE = [17, 48, 79]; // altezza di ogni riga, in % dell'altezza dello sfondo
-const PASSO_X = 19;           // distanza orizzontale tra due foglietti (in % della larghezza)
+// Disposizione dei foglietti
+const LARGHEZZA_FOGLIO = 19;   // buste più grandi
+const FILE = [5, 4, 5];
+const Y_RIGHE = [17, 48, 79];
+const PASSO_X = 19;
 
-// Un foglietto diverso per ogni tipo di sorpresa (cartella "disegni")
+// Disegni
 const FOGLI = { foto: "disegni/busta_1.png", canzone: "disegni/busta_2.png", messaggio: "disegni/busta_3.png" };
-const ETICHETTA = "disegni/etichetta.png";   // il pezzetto di carta "clicca qui!" per le canzoni
-const LARGHEZZA_ETICHETTA = 50;  // larghezza di "clicca qui!" sul foglio, in % della larghezza del foglio (più alto = più grande)
-const SCRITTA_ETICHETTA = "clicca qui!";  // scritta messa dal codice sopra il disegno dell'etichetta. Se la scritta è già nel disegno, metti ""
-const COLORE_SCRITTA = "#000000";          // colore di questa scritta
-const DIMENSIONE_SCRITTA = 0.6;              // 1 = normale, 1.3 = più grande
-const MS_LETTERA = 35;        // velocità della macchina da scrivere (millisecondi per lettera)
+const ETICHETTA = "disegni/etichetta.png";
+const LARGHEZZA_ETICHETTA = 35;   // etichetta più piccola
+const SCRITTA_ETICHETTA = "clicca qui!";
+const COLORE_SCRITTA = "#000000";
+const DIMENSIONE_SCRITTA = 0.6;
+const MS_LETTERA = 35;
 
-// Puntina (cartella "disegni"): sta in alto al centro del foglietto e si stacca quando lo apri
-const PIN = "disegni/pin.png";   // vuoto ("") = niente puntine
-const PIN_LARGHEZZA = 35;     // larghezza della puntina, in % della larghezza del foglietto
-const PIN_ALTEZZA = 10;        // dove sta il centro della puntina, in % dall'alto del foglietto
+// Puntina
+const PIN = "disegni/pin.png";
+const PIN_LARGHEZZA = 35;
+const PIN_ALTEZZA = 10;
 
 // Testi e grandezze
-const DIMENSIONE_DATA = 1;    // numero e mese sul foglietto: 1 = normale, 1.3 = più grandi, 0.8 = più piccoli
-const DIMENSIONE_TESTO = 0.6;   // messaggi e didascalie sul foglio aperto: 1 = normale, 1.2 = più grandi
-const MARGINE_LATERALE = 18;  // margine destro e sinistro del testo sul foglio, in % (più alto = testo più stretto)
-const COLORE_TESTO = "#000000";   // colore di messaggi e didascalie
-const DIMENSIONE_MESSAGGIO = 0.8; // grandezza del testo sul cartello: 1 = normale (si rimpicciolisce da solo se non ci sta), 1.2 = più grande
+const DIMENSIONE_DATA = 1.25;   // date più grandi del 25%
+const DIMENSIONE_TESTO = 0.6;
+const MARGINE_LATERALE = 18;
+const COLORE_TESTO = "#000000";
+const DIMENSIONE_MESSAGGIO = 0.8;
 
-const COLORE_DATE = "#000000";      // colore di numero e mese scritti sul foglietto
-const COLORE_PAGINA = "#000000";    // colore dello sfondo della pagina (la parte sotto/intorno alla foto)
-const COLORE_MESSAGGIO = "#000000"; // colore del messaggio in fondo alla pagina
-const MESSAGGIO_FINALE = "una piccola sorpresa ogni giorno per quando sarò via!";  // compare sul cartello a destra; vuoto = niente
+const COLORE_DATE = "#000000";
+const COLORE_PAGINA = "#000000";
+const COLORE_MESSAGGIO = "#000000";
+const MESSAGGIO_FINALE = "una piccola sorpresa ogni giorno per quando sarò via!";
 
-// Cartello con il messaggio (cartella "disegni"): a destra, a metà altezza
-const MESSAGGIO_IMG = "disegni/messaggio.png";   // vuoto ("") = niente cartello
-const SEGNO_ALTEZZA = 70;        // altezza del cartello, in % dell'altezza dello schermo
-const SEGNO_DAL_BORDO = 10;       // quanto il cartello sta staccato dal bordo destro, in % della larghezza dello schermo (0 = attaccato al bordo; più alto = più a sinistra)
-const SEGNO_LARGHEZZA_MAX = 40;  // il cartello non occupa mai più di questa % della larghezza dello schermo
-// Dove sta il foglio di carta nell'immagine (in % dell'immagine senza i margini trasparenti): centro, larghezza, altezza, inclinazione in gradi
+// Cartello a destra
+const MESSAGGIO_IMG = "disegni/messaggio.png";
+const SEGNO_ALTEZZA = 40;   // cartello molto più piccolo
+const SEGNO_DAL_BORDO = 10;
+const SEGNO_LARGHEZZA_MAX = 40;
 const MESSAGGIO_RETTANGOLO = { x: 43.2, y: 34.8, w: 46, h: 44, rot: -16 };
+
 const GIORNI = [
   { data:"11-26", tipo:"canzone",   brano:"hai due occhi giganti che luccicano, guardano i miei", link:"https://open.spotify.com/intl-it/track/39J4IyWQJWcBPU6tMnlD07?si=21a4ecfae375446f" },
   { data:"11-27", tipo:"messaggio", msg:"i am looking inward and finding the image of caterina everywhere!" },
@@ -175,27 +184,15 @@ root.style.setProperty("--kd", DIMENSIONE_DATA); root.style.setProperty("--mx", 
 root.style.setProperty("--testo", COLORE_TESTO); root.style.setProperty("--dm", DIMENSIONE_MESSAGGIO); root.style.setProperty("--le", LARGHEZZA_ETICHETTA);
 root.style.setProperty("--scr", COLORE_SCRITTA); root.style.setProperty("--ds", DIMENSIONE_SCRITTA);
 
-// precarico foglietti, etichetta e foto
-/* ---------- foto: le immagini molto grandi (soprattutto da telefono) a volte restano trasparenti mentre il foglio gira.
-   Le rimpicciolisco prima di mostrarle (max 1100 px sul lato lungo): sembrano uguali ma sono molto più leggere ---------- */
-const foto = {};   // percorso della foto → versione leggera pronta all'uso
-function riduci(src) {
-  return new Promise(res => {
+/* Carica le foto originali senza modificarne opacità o colori */
+GIORNI.forEach(g => {
+  if (g.img) {
     const im = new Image();
-    im.onload = () => {
-      try {
-        const k = Math.min(1, 1100 / Math.max(im.naturalWidth, im.naturalHeight));
-        const c = document.createElement("canvas"); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
-        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
-        c.toBlob(b => res(b ? URL.createObjectURL(b) : src), "image/png");
-      } catch (e) { res(src); }
-    };
-    im.onerror = () => res(src);
-    im.src = src;
-  });
-}
-GIORNI.forEach(g => { if (g.img) riduci(g.img).then(u => { foto[g.img] = u; }); });
-[...Object.values(FOGLI), ETICHETTA, PIN].filter(Boolean).forEach(src => { new Image().src = src; });   // precarico foglietti, etichetta, puntina
+    im.src = g.img;
+  }
+});
+
+[...Object.values(FOGLI), ETICHETTA, PIN].filter(Boolean).forEach(src => { new Image().src = src; });
 
 let opened = [];
 try { opened = JSON.parse(localStorage.getItem("aperti") || "[]"); } catch (e) {}
@@ -203,16 +200,14 @@ try { opened = JSON.parse(localStorage.getItem("aperti") || "[]"); } catch (e) {
 const MESI_BREVI = ["GEN","FEB","MAR","APR","MAG","GIU","LUG","AGO","SET","OTT","NOV","DIC"];
 const num = g => parseInt(g.data.split("-")[1], 10);
 const mese = g => MESI_BREVI[parseInt(g.data.split("-")[0], 10) - 1];
-// Data di oggi in Italia (AAAA-MM-GG), qualunque sia il fuso orario del dispositivo
 const oggiInItalia = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-// Si apre dalla mezzanotte italiana del giorno in poi
 const isUnlocked = g => unlockAll || oggiInItalia() >= `${ANNO}-${g.data}`;
 const refreshers = [];
-setInterval(() => refreshers.forEach(f => f()), 30000); // se la pagina resta aperta, a mezzanotte si sblocca da sola
+setInterval(() => refreshers.forEach(f => f()), 30000);
 
 function el(tag, props, parent) { const e = Object.assign(document.createElement(tag), props); parent.appendChild(e); return e; }
 
-// posizioni automatiche in righe da 5 + 4 + 5 (se un giorno ha "pos":[x,y] vale quella)
+// Posizioni automatiche
 const auto = [];
 FILE.forEach((n, r) => { for (let j = 0; j < n; j++) auto.push([50 + (j - (n - 1) / 2) * PASSO_X, Y_RIGHE[r]]); });
 
@@ -221,12 +216,14 @@ GIORNI.forEach((g, i) => {
   const b = document.createElement("button");
   b.className = "door";
   const fg = el("span", { className: "fg" }, b);
-  fg.style.setProperty("--d", `-${Math.random().toFixed(2)}s`);   // ogni foglietto parte sfasato
+  fg.style.setProperty("--d", `-${Math.random().toFixed(2)}s`);
   el("img", { className: "foglietto", src: FOGLI[g.tipo], alt: "", draggable: false }, fg);
   const d = el("span", { className: "data" }, fg);
-  el("b", { textContent: num(g) }, d); el("i", { textContent: mese(g) }, d);
+  el("b", { textContent: num(g) }, d);
+  el("i", { textContent: mese(g) }, d);
   if (PIN) el("img", { className: "pin", src: PIN, alt: "", draggable: false }, fg);
-  b.style.left = g.pos[0] + "%"; b.style.top = g.pos[1] + "%";
+  b.style.left = g.pos[0] + "%";
+  b.style.top = g.pos[1] + "%";
   b.setAttribute("aria-label", `${num(g)} ${mese(g)}`);
   const refresh = () => {
     b.classList.toggle("locked", !isUnlocked(g));
@@ -247,31 +244,34 @@ GIORNI.forEach((g, i) => {
   stage.appendChild(b);
 });
 
-/* ---------- macchina da scrivere: il testo intero occupa già il suo spazio, le lettere compaiono una a una ---------- */
+/* Macchina da scrivere */
 let tok = 0;
 function prepara(box, testo) {
   box.innerHTML = "";
-  el("span", {}, box); el("span", { className: "nascosto", textContent: testo }, box);
+  el("span", {}, box);
+  el("span", { className: "nascosto", textContent: testo }, box);
 }
 function scrivi(box, testo) {
   const id = ++tok, [a, b] = box.children;
   if (reduceMotion) { a.textContent = testo; b.textContent = ""; return; }
   let n = 0;
   const t = setInterval(() => {
-    if (id !== tok) return clearInterval(t);          // chiuso nel frattempo
-    n++; a.textContent = testo.slice(0, n); b.textContent = testo.slice(n);
+    if (id !== tok) return clearInterval(t);
+    n++;
+    a.textContent = testo.slice(0, n);
+    b.textContent = testo.slice(n);
     if (n >= testo.length) clearInterval(t);
   }, MS_LETTERA);
 }
 
-/* ---------- apertura: il foglio vola al centro girandosi di 180° (a specchio) ---------- */
+/* Apertura */
 let foglioEl = null, portaCorrente = null, pronto = false, chiudendo = false;
 const PERSP = "perspective(1400px)";
 const FINE = `${PERSP} rotateY(180deg)`;
-const PIN_DENTRO = "translate(-50%,-50%)";                                         // puntina infilata
-const PIN_FUORI = "translate(-50%,-50%) translate(70%,-160%) scale(1.8) rotate(35deg)";   // puntina staccata
+const PIN_DENTRO = "translate(-50%,-50%)";
+const PIN_FUORI = "translate(-50%,-50%) translate(70%,-160%) scale(1.8) rotate(35deg)";
 
-function trasformaDa(doorImg, W) {                     // posizione/scala del foglietto sulla foto, rispetto al centro
+function trasformaDa(doorImg, W) {
   const r = doorImg.getBoundingClientRect();
   const dx = r.left + r.width / 2 - root.clientWidth / 2, dy = r.top + r.height / 2 - innerHeight / 2;
   return `${PERSP} translate(${dx}px,${dy}px) scale(${r.width / W}) rotateY(0deg)`;
@@ -282,7 +282,8 @@ function openGift(g, doorEl) {
   const ar = (doorImg.naturalWidth / doorImg.naturalHeight) || 1;
   const W = Math.min(root.clientWidth * .88, 560, innerHeight * .84 * ar), H = W / ar;
   const da = trasformaDa(doorImg, W);
-  portaCorrente = doorEl; pronto = false;
+  portaCorrente = doorEl;
+  pronto = false;
   doorEl.style.visibility = "hidden";
   overlay.classList.add("on");
 
@@ -291,43 +292,54 @@ function openGift(g, doorEl) {
   fg.style.setProperty("--u", W / 100 + "px");
   el("img", { className: "fronte", src: FOGLI[g.tipo], alt: "" }, fg);
   const dd = el("span", { className: "data" }, fg);
-  el("b", { textContent: num(g) }, dd); el("i", { textContent: mese(g) }, dd);
+  el("b", { textContent: num(g) }, dd);
+  el("i", { textContent: mese(g) }, dd);
   const pinBig = PIN ? el("img", { className: "pin", src: PIN, alt: "" }, fg) : null;
 
-  // retro del foglio (si vede solo dopo i 90° di rotazione, già leggibile)
   const retro = el("div", { className: "retro" }, fg);
   const testo = g.tipo === "foto" ? (g.didascalia || "") : g.tipo === "canzone" ? (g.brano || "") : (g.msg || "");
   const fs = (g.tipo === "messaggio" ? (testo.length > 100 ? 5.6 : testo.length > 60 ? 7 : 8.5) : 7) * DIMENSIONE_TESTO;
   retro.style.fontSize = `calc(var(--u) * ${fs})`;
-  if (g.tipo === "foto") el("img", { className: "scatto", src: foto[g.img] || g.img, alt: testo, decoding: "sync" }, retro);   // foto: appare mentre il foglio gira   // foto: appare mentre il foglio gira
+
+  /* Foto originali: nessun ridimensionamento Canvas */
+  if (g.tipo === "foto") {
+    el("img", { className: "scatto", src: g.img, alt: testo }, retro);
+  }
+
   const did = el("div", { className: "did" }, retro);
   prepara(did, testo);
-  if (g.tipo === "canzone") {                                                                    // etichetta: appare subito
+
+  if (g.tipo === "canzone") {
     const a = el("a", { className: "etichetta", href: g.link, target: "_blank", rel: "noopener" }, retro);
     const im = el("img", { src: etichettaPronta || ETICHETTA, alt: "clicca qui!" }, a);
     if (SCRITTA_ETICHETTA) el("span", { className: "scritta", textContent: SCRITTA_ETICHETTA }, a);
-    im.onerror = () => { im.remove(); a.classList.add("base"); a.textContent = "clicca qui!"; };   // se il disegno non si carica, scritta semplice
+    im.onerror = () => { im.remove(); a.classList.add("base"); a.textContent = "clicca qui!"; };
   }
 
   fg.style.transform = FINE;
   const fatto = () => { pronto = true; scrivi(did, testo); };
   if (reduceMotion) { if (pinBig) pinBig.style.display = "none"; return fatto(); }
   if (pinBig) pinBig.animate([{ transform: PIN_DENTRO + " translateZ(2px)", opacity: 1 }, { transform: PIN_FUORI + " translateZ(2px)", opacity: 0 }],
-    { duration: 500, easing: "ease-in", fill: "forwards" });                      // la puntina si stacca...
-  fg.animate([{ transform: da }, { transform: FINE }],                              // ...e il foglio si solleva
+    { duration: 500, easing: "ease-in", fill: "forwards" });
+  fg.animate([{ transform: da }, { transform: FINE }],
     { duration: 1000, delay: 200, fill: "backwards", easing: "cubic-bezier(.3,.7,.2,1)" }).onfinish = fatto;
 }
 
-/* ---------- chiusura: il foglio si rigira e torna al suo posto ---------- */
+/* Chiusura */
 function closeGift() {
   const fg = foglioEl;
   if (!fg || !pronto || chiudendo) return;
-  chiudendo = true; tok++;                             // ferma la macchina da scrivere
+  chiudendo = true;
+  tok++;
   const fine = () => {
-    fg.remove(); foglioEl = null; portaCorrente.style.visibility = "";
-    const pin = portaCorrente.querySelector(".pin");                                // la puntina torna al suo posto
+    fg.remove();
+    foglioEl = null;
+    portaCorrente.style.visibility = "";
+    const pin = portaCorrente.querySelector(".pin");
     if (pin && !reduceMotion) pin.animate([{ transform: PIN_FUORI, opacity: 0 }, { transform: PIN_DENTRO, opacity: 1 }], { duration: 350, easing: "ease-out" });
-    overlay.classList.remove("on"); chiudendo = false; pronto = false;
+    overlay.classList.remove("on");
+    chiudendo = false;
+    pronto = false;
   };
   if (reduceMotion) return fine();
   const a = trasformaDa(portaCorrente.querySelector("img"), fg.offsetWidth);
@@ -337,49 +349,61 @@ function closeGift() {
 overlay.addEventListener("click", e => { if (!e.target.closest("a")) closeGift(); });
 addEventListener("keydown", e => { if (e.key === "Escape") closeGift(); });
 
-/* ---------- layout: foglietti a sinistra, cartello con il messaggio a destra ---------- */
-let segnoAr = 0.865;                                    // proporzioni del cartello (larghezza ÷ altezza), aggiornate quando l'immagine è pronta
+/* Layout */
+let segnoAr = 0.865;
 Object.entries(MESSAGGIO_RETTANGOLO).forEach(([k, v]) => finale.style.setProperty("--r" + ({ x: "x", y: "y", w: "w", h: "h", rot: "r" })[k], k === "rot" ? v + "deg" : v));
 
-function ritagliaImmagine(src) {                        // toglie i margini trasparenti, così il cartello tocca davvero il bordo
+function ritagliaImmagine(src) {
   return new Promise(res => {
     const im = new Image();
     im.onload = () => {
       let out = { src, ar: im.naturalWidth / im.naturalHeight };
       try {
-        const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas"); c.width = w; c.height = h;
+        const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas");
+        c.width = w; c.height = h;
         const x = c.getContext("2d"); x.drawImage(im, 0, 0);
         const d = x.getImageData(0, 0, w, h).data;
         let x0 = w, y0 = h, x1 = -1, y1 = -1;
-        for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) if (d[(y * w + i) * 4 + 3] > 20) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) if (d[(y * w + i) * 4 + 3] > 20) {
+          if (i < x0) x0 = i;
+          if (i > x1) x1 = i;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
         if (x1 >= 0) {
-          const o = document.createElement("canvas"); o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
+          const o = document.createElement("canvas");
+          o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
           o.getContext("2d").drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height);
           out = { src: o.toDataURL("image/png"), ar: o.width / o.height };
         }
-      } catch (e) {}                                    // (es. aprendo il file dal computer senza server: uso l'immagine intera)
+      } catch (e) {}
       res(out);
     };
     im.onerror = () => res(null);
     im.src = src;
   });
 }
-function adattaTesto() {                                // il messaggio si rimpicciolisce da solo finché sta dentro il foglio di carta
+
+function adattaTesto() {
   const t = finale.firstElementChild;
   let fz = segno.offsetHeight * 0.05 * DIMENSIONE_MESSAGGIO;
   finale.style.fontSize = fz + "px";
-  for (let i = 0; i < 40 && fz > 7 && t.offsetHeight > finale.clientHeight; i++) { fz *= 0.94; finale.style.fontSize = fz + "px"; }
+  for (let i = 0; i < 40 && fz > 7 && t.offsetHeight > finale.clientHeight; i++) {
+    fz *= 0.94;
+    finale.style.fontSize = fz + "px";
+  }
 }
 function disponi() {
   const h = Math.min(innerHeight * SEGNO_ALTEZZA / 100, root.clientWidth * SEGNO_LARGHEZZA_MAX / 100 / segnoAr);
-  segno.style.height = h + "px"; segno.style.width = h * segnoAr + "px";
+  segno.style.height = h + "px";
+  segno.style.width = h * segnoAr + "px";
   segno.style.marginRight = root.clientWidth * SEGNO_DAL_BORDO / 100 + "px";
-  const r = area.getBoundingClientRect();               // la zona a sinistra: i foglietti stanno qui
+  const r = area.getBoundingClientRect();
   stage.style.setProperty("--W", Math.min(r.width, r.height * RATIO) + "px");
   adattaTesto();
 }
-/* Etichetta "clicca qui!": tolgo lo sfondo bianco che circonda il disegno (se c'è) e i margini vuoti,
-   così resta solo il pezzetto di carta. Il bianco *dentro* il disegno (la carta) resta. */
+
+/* Preparazione etichetta */
 let etichettaPronta = null;
 function preparaEtichetta(src) {
   return new Promise(res => {
@@ -387,30 +411,41 @@ function preparaEtichetta(src) {
     im.onerror = () => res(null);
     im.onload = () => {
       try {
-        const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas"); c.width = w; c.height = h;
-        const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(im, 0, 0);
+        const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        const x = c.getContext("2d", { willReadFrequently: true });
+        x.drawImage(im, 0, 0);
         const dati = x.getImageData(0, 0, w, h), d = dati.data;
-        const vuoto = p => d[p * 4 + 3] < 20 || (d[p * 4] > 235 && d[p * 4 + 1] > 235 && d[p * 4 + 2] > 235);   // trasparente o quasi bianco
-        const vis = new Uint8Array(w * h), st = new Int32Array(w * h); let sp = 0;
+        const vuoto = p => d[p * 4 + 3] < 20 || (d[p * 4] > 235 && d[p * 4 + 1] > 235 && d[p * 4 + 2] > 235);
+        const vis = new Uint8Array(w * h), st = new Int32Array(w * h);
+        let sp = 0;
         const push = p => { if (!vis[p] && vuoto(p)) { vis[p] = 1; st[sp++] = p; } };
         for (let i = 0; i < w; i++) { push(i); push((h - 1) * w + i); }
         for (let j = 0; j < h; j++) { push(j * w); push(j * w + w - 1); }
-        while (sp) {                                      // riempimento dai bordi: prende solo lo sfondo collegato al bordo
+        while (sp) {
           const p = st[--sp], px = p % w;
-          if (px > 0) push(p - 1); if (px < w - 1) push(p + 1); if (p >= w) push(p - w); if (p < w * (h - 1)) push(p + w);
+          if (px > 0) push(p - 1);
+          if (px < w - 1) push(p + 1);
+          if (p >= w) push(p - w);
+          if (p < w * (h - 1)) push(p + w);
         }
         let x0 = w, y0 = h, x1 = -1, y1 = -1, resto = 0;
         for (let p = 0; p < w * h; p++) {
           if (vis[p]) { d[p * 4 + 3] = 0; continue; }
-          resto++; const px = p % w, py = (p - px) / w;
-          if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py;
+          resto++;
+          const px = p % w, py = (p - px) / w;
+          if (px < x0) x0 = px;
+          if (px > x1) x1 = px;
+          if (py < y0) y0 = py;
+          if (py > y1) y1 = py;
         }
-        if (resto < w * h * 0.005) return res(null);      // sarebbe sparito tutto: lascio l'immagine com'è
+        if (resto < w * h * 0.005) return res(null);
         x.putImageData(dati, 0, 0);
-        const o = document.createElement("canvas"); o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
+        const o = document.createElement("canvas");
+        o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
         o.getContext("2d").drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height);
         res(o.toDataURL("image/png"));
-      } catch (e) { res(null); }                          // (es. file aperto dal computer senza server: lascio l'originale)
+      } catch (e) { res(null); }
     };
     im.src = src;
   });
@@ -419,13 +454,14 @@ if (ETICHETTA) preparaEtichetta(ETICHETTA).then(u => { etichettaPronta = u; });
 
 if (MESSAGGIO_IMG) ritagliaImmagine(MESSAGGIO_IMG).then(r => {
   if (r) { segnoImg.src = r.src; segnoAr = r.ar; } else segnoImg.style.display = "none";
-  segno.classList.add("pronto"); disponi();
+  segno.classList.add("pronto");
+  disponi();
 });
 else segno.style.display = "none";
 addEventListener("resize", disponi);
 disponi();
 
-/* ---------- modalità ?sposta=1 ---------- */
+/* Modalità sposta */
 function makeDraggable(b, g) {
   b.addEventListener("pointerdown", e => {
     b.setPointerCapture(e.pointerId);
@@ -433,10 +469,12 @@ function makeDraggable(b, g) {
       const r = stage.getBoundingClientRect();
       g.pos[0] = Math.round(Math.min(100, Math.max(0, (ev.clientX - r.left) / r.width * 100)) * 10) / 10;
       g.pos[1] = Math.round(Math.min(100, Math.max(0, (ev.clientY - r.top) / r.height * 100)) * 10) / 10;
-      b.style.left = g.pos[0] + "%"; b.style.top = g.pos[1] + "%";
+      b.style.left = g.pos[0] + "%";
+      b.style.top = g.pos[1] + "%";
     };
     const up = () => { b.removeEventListener("pointermove", move); b.removeEventListener("pointerup", up); };
-    b.addEventListener("pointermove", move); b.addEventListener("pointerup", up);
+    b.addEventListener("pointermove", move);
+    b.addEventListener("pointerup", up);
   });
 }
 $("copy").addEventListener("click", () => {
