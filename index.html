@@ -89,6 +89,22 @@
   #foglio .data i { font-size:calc(var(--u) * 18 * var(--kd, 1)); }
   #foglio .pin { transform:translate(-50%,-50%) translateZ(2px); backface-visibility:hidden; }
   #foglio .etichetta img { width:100%; display:block; }
+  /* Etichetta sulle fotografie */
+  #foglio .etichetta-foto {
+    position:absolute;
+    left:var(--ex, 50%);
+    top:var(--ey, 12%);
+    width:calc(var(--u) * var(--ew, 30));
+    display:block;
+    transform:translate(-50%, -50%) rotate(var(--er, 0deg));
+    transform-origin:center;
+    z-index:5;
+  }
+  
+  #foglio .etichetta-foto img {
+    width:100%;
+    display:block;
+  }
   #foglio .etichetta .scritta { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; white-space:nowrap;
                                 font-size:calc(var(--u) * 7 * var(--ds, 1)); color:var(--scr, #000); pointer-events:none; }
 
@@ -134,6 +150,13 @@ const SCRITTA_ETICHETTA = "clicca qui";
 const COLORE_SCRITTA = "#000000";
 const DIMENSIONE_SCRITTA = 0.6;
 const MS_LETTERA = 35;
+const ETICHETTE_FOTO = {
+  "11-28": { x: 50, y: 12, larghezza: 35, rotazione: -10 },
+  "11-29": { x: 48, y: 10, larghezza: 35, rotazione: -10 },
+  "12-02": { x: 52, y: 13, larghezza: 35, rotazione: -10 },
+  "12-06": { x: 50, y: 11, larghezza: 35, rotazione: -10 },
+  "12-08": { x: 47, y: 12, larghezza: 35, rotazione: -10 }
+};
 
 // Puntina
 const PIN = "disegni/pin.png";
@@ -315,12 +338,34 @@ function openGift(g, doorEl) {
   retro.style.fontSize = `calc(var(--u) * ${fs})`;
 
   /* Foto originali: nessun ridimensionamento Canvas */
+/* Foto originali: nessun ridimensionamento Canvas */
   if (g.tipo === "foto") {
     el("img", {
       className: "scatto",
       src: g.img,
       alt: testo
     }, retro);
+  
+    // Etichetta personalizzata sulla fotografia
+    const posizione = ETICHETTE_FOTO[g.data];
+  
+    if (posizione) {
+      const etichetta = el("span", {
+        className: "etichetta-foto"
+      }, retro);
+  
+      etichetta.style.setProperty("--ex", posizione.x + "%");
+      etichetta.style.setProperty("--ey", posizione.y + "%");
+      etichetta.style.setProperty("--ew", posizione.larghezza);
+      etichetta.style.setProperty("--er", posizione.rotazione + "deg");
+  
+      const im = el("img", {
+        src: etichettaPronta || ETICHETTA,
+        alt: ""
+      }, etichetta);
+  
+      im.onerror = () => etichetta.remove();
+    }
   }
 
   const did = el("div", { className: "did" }, retro);
