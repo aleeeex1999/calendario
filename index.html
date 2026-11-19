@@ -50,16 +50,28 @@
                    gap:calc(var(--u) * 4); padding:calc(var(--u) * 11) calc(var(--u) * var(--mx, 18));
                    font-size:calc(var(--u) * 7.5); line-height:1.25; color:var(--testo, var(--ink)); }
   #foglio .scatto {
-    max-width:calc(var(--u) * 56);
-    max-height:55%;
-    width:auto;
-    height:auto;
-    transform:rotate(-3deg);
-    box-shadow:0 calc(var(--u) * .8) calc(var(--u) * 2.5) rgba(0,0,0,.35);
-    opacity:1 !important;
-    filter:none !important;
-    mix-blend-mode:normal !important;
-    visibility:visible !important;
+    display: block;
+  
+    /* Dimensioni di visualizzazione */
+    width: auto;
+    height: auto;
+    max-width: calc(var(--u) * 56);
+    max-height: 55%;
+  
+    /* Immagine completamente visibile */
+    opacity: 1 !important;
+    visibility: visible !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
+  
+    /* Aspetto */
+    transform: rotate(-3deg);
+    object-fit: contain;
+  
+    box-shadow:
+      0 calc(var(--u) * .8)
+      calc(var(--u) * 2.5)
+      rgba(0, 0, 0, .35);
   }
   #foglio .retro {
   opacity:1 !important;
@@ -131,7 +143,7 @@ const ETICHETTA = "disegni/etichetta.png";
 const LARGHEZZA_ETICHETTA = 35;   // etichetta più piccola
 const SCRITTA_ETICHETTA = "clicca qui";
 const COLORE_SCRITTA = "#000000";
-const DIMENSIONE_SCRITTA = 0.8;
+const DIMENSIONE_SCRITTA = 0.6;
 const MS_LETTERA = 35;
 
 // Puntina
@@ -141,10 +153,10 @@ const PIN_ALTEZZA = 10;
 
 // Testi e grandezze
 const DIMENSIONE_DATA = 1.0;   // date più grandi del 25%
-const DIMENSIONE_TESTO = 0.8;
+const DIMENSIONE_TESTO = 0.6;
 const MARGINE_LATERALE = 18;
 const COLORE_TESTO = "#000000";
-const DIMENSIONE_MESSAGGIO = 0.8;
+const DIMENSIONE_MESSAGGIO = 1.0;
 
 const COLORE_DATE = "#000000";
 const COLORE_PAGINA = "#000000";
