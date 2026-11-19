@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -12,9 +11,9 @@
   /* Tutta la pagina è una sola schermata: lo sfondo si adatta (intero) allo schermo, senza scorrere */
   html, body { margin:0; height:100%; overflow:hidden; background:var(--night); font-family:var(--font); color:var(--ink); }
   body { display:flex; align-items:center; justify-content:center; }
-  #stage { --W:min(100vw, calc(100vh * var(--ratio))); --su:calc(var(--W) / 100);   /* --su = 1% della larghezza dello sfondo */
-           position:relative; flex:none; width:var(--W); aspect-ratio:var(--ratio);
-           background: url("sfondo.jpg") center/100% 100% no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
+  #fondo { position:fixed; inset:0; background: url("sfondo.jpg") center/cover no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
+  #stage { --W:min(100vw, calc(100vh * var(--ratio))); --su:calc(var(--W) / 100);   /* --su = 1% della larghezza del riquadro dei foglietti */
+           position:relative; z-index:1; flex:none; width:var(--W); aspect-ratio:var(--ratio); }
 
   /* Foglietto sulla foto: vibra (0° ↔ 4° ogni mezzo secondo), con la data sopra */
   @supports (height:100dvh) { body { height:100dvh; } #stage { --W:min(100vw, calc(100dvh * var(--ratio))); } }
@@ -51,7 +50,7 @@
                     box-shadow:0 calc(var(--u) * .8) calc(var(--u) * 2.5) rgba(0,0,0,.35); }
   #foglio .did { white-space:pre-line; }
   #foglio .nascosto { color:transparent; }
-  #foglio .etichetta { width:calc(var(--u) * var(--le, 60)); display:block; color:inherit; text-decoration:none; }
+  #foglio .etichetta { position:relative; width:calc(var(--u) * var(--le, 60)); display:block; color:inherit; text-decoration:none; }
   #foglio .etichetta.base { background:#fff; padding:calc(var(--u) * 3); font-size:calc(var(--u) * 8); transform:rotate(-2deg);
                             box-shadow:0 calc(var(--u) * .8) calc(var(--u) * 2.5) rgba(0,0,0,.3); }
   #foglio .data { transform:translateZ(1px); backface-visibility:hidden; }       /* data sul davanti del foglio grande */
@@ -59,6 +58,8 @@
   #foglio .data i { font-size:calc(var(--u) * 18 * var(--kd, 1)); }
   #foglio .pin { transform:translate(-50%,-50%) translateZ(2px); backface-visibility:hidden; }
   #foglio .etichetta img { width:100%; display:block; }
+  #foglio .etichetta .scritta { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; white-space:nowrap;
+                                font-size:calc(var(--u) * 8 * var(--ds, 1)); color:var(--scr, #000); pointer-events:none; }
 
   #finale { position:absolute; left:50%; bottom:2.5%; transform:translateX(-50%); width:84%; text-align:center; white-space:pre-line;
             font-size:calc(var(--su) * var(--dm, 2.1)); line-height:1.3; color:var(--msg, #fff8ec); pointer-events:none; }
@@ -73,6 +74,7 @@
 <body>
 
 <div id="bar"><span>Modalità sposta: trascina i foglietti</span><button id="copy">Copia posizioni</button></div>
+<div id="fondo"></div>
 <div id="stage"><div id="finale"></div></div>
 <div id="overlay" role="dialog" aria-modal="true"></div>
 
@@ -98,6 +100,9 @@ const PASSO_X = 17;           // distanza orizzontale tra due foglietti (in % de
 const FOGLI = { foto: "disegni/busta_1.png", canzone: "disegni/busta_2.png", messaggio: "disegni/busta_3.png" };
 const ETICHETTA = "disegni/etichetta.png";   // il pezzetto di carta "clicca qui!" per le canzoni
 const LARGHEZZA_ETICHETTA = 60;  // larghezza di "clicca qui!" sul foglio, in % della larghezza del foglio (più alto = più grande)
+const SCRITTA_ETICHETTA = "clicca qui!";  // scritta messa dal codice sopra il disegno dell'etichetta. Se la scritta è già nel disegno, metti ""
+const COLORE_SCRITTA = "#000000";          // colore di questa scritta
+const DIMENSIONE_SCRITTA = 1;              // 1 = normale, 1.3 = più grande
 const MS_LETTERA = 35;        // velocità della macchina da scrivere (millisecondi per lettera)
 
 // Puntina (cartella "disegni"): sta in alto al centro del foglietto e si stacca quando lo apri
@@ -153,9 +158,29 @@ $("finale").textContent = MESSAGGIO_FINALE;
 root.style.setProperty("--pinw", PIN_LARGHEZZA + "%"); root.style.setProperty("--piny", PIN_ALTEZZA + "%");
 root.style.setProperty("--kd", DIMENSIONE_DATA); root.style.setProperty("--mx", MARGINE_LATERALE);
 root.style.setProperty("--testo", COLORE_TESTO); root.style.setProperty("--dm", DIMENSIONE_MESSAGGIO); root.style.setProperty("--le", LARGHEZZA_ETICHETTA);
+root.style.setProperty("--scr", COLORE_SCRITTA); root.style.setProperty("--ds", DIMENSIONE_SCRITTA);
 
 // precarico foglietti, etichetta e foto
-[...Object.values(FOGLI), ETICHETTA, PIN, ...GIORNI.map(g => g.img)].filter(Boolean).forEach(src => { new Image().src = src; });
+/* ---------- foto: le immagini molto grandi (soprattutto da telefono) a volte restano trasparenti mentre il foglio gira.
+   Le rimpicciolisco prima di mostrarle (max 1100 px sul lato lungo): sembrano uguali ma sono molto più leggere ---------- */
+const foto = {};   // percorso della foto → versione leggera pronta all'uso
+function riduci(src) {
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      try {
+        const k = Math.min(1, 1100 / Math.max(im.naturalWidth, im.naturalHeight));
+        const c = document.createElement("canvas"); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+        c.toBlob(b => res(b ? URL.createObjectURL(b) : src), "image/png");
+      } catch (e) { res(src); }
+    };
+    im.onerror = () => res(src);
+    im.src = src;
+  });
+}
+GIORNI.forEach(g => { if (g.img) riduci(g.img).then(u => { foto[g.img] = u; }); });
+[...Object.values(FOGLI), ETICHETTA, PIN].filter(Boolean).forEach(src => { new Image().src = src; });   // precarico foglietti, etichetta, puntina
 
 let opened = [];
 try { opened = JSON.parse(localStorage.getItem("aperti") || "[]"); } catch (e) {}
@@ -259,12 +284,13 @@ function openGift(g, doorEl) {
   const testo = g.tipo === "foto" ? (g.didascalia || "") : g.tipo === "canzone" ? (g.brano || "") : (g.msg || "");
   const fs = (g.tipo === "messaggio" ? (testo.length > 100 ? 5.6 : testo.length > 60 ? 7 : 8.5) : 7) * DIMENSIONE_TESTO;
   retro.style.fontSize = `calc(var(--u) * ${fs})`;
-  if (g.tipo === "foto") el("img", { className: "scatto", src: g.img, alt: testo }, retro);   // foto: appare mentre il foglio gira
+  if (g.tipo === "foto") el("img", { className: "scatto", src: foto[g.img] || g.img, alt: testo, decoding: "sync" }, retro);   // foto: appare mentre il foglio gira   // foto: appare mentre il foglio gira
   const did = el("div", { className: "did" }, retro);
   prepara(did, testo);
   if (g.tipo === "canzone") {                                                                    // etichetta: appare subito
     const a = el("a", { className: "etichetta", href: g.link, target: "_blank", rel: "noopener" }, retro);
     const im = el("img", { src: ETICHETTA, alt: "clicca qui!" }, a);
+    if (SCRITTA_ETICHETTA) el("span", { className: "scritta", textContent: SCRITTA_ETICHETTA }, a);
     im.onerror = () => { im.remove(); a.classList.add("base"); a.textContent = "clicca qui!"; };   // se il disegno non si carica, scritta semplice
   }
 
