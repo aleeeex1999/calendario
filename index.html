@@ -6,86 +6,66 @@
 <title>Il nostro calendario</title>
 <style>
   @font-face { font-family:"Crayons"; src:url("fonts/i_eat_crayons.ttf") format("truetype"); font-display:swap; }
-  :root { --font:"Crayons", Georgia, "Times New Roman", serif; --paper:#fff8ec; --ink:#3a2a22; --gold:#e8b44c; --red:#b8402f; --night:#1d2233; }
+  :root { --font:"Crayons", Georgia, "Times New Roman", serif; --ink:#3a2a22; --night:#1d2233; }
   * { box-sizing: border-box; }
   html, body { margin:0; background:var(--night); font-family:var(--font); color:var(--ink); }
   body { min-height:100vh; }
 
   /* L'immagine occupa tutta la larghezza; se è più alta dello schermo, si scorre in verticale */
-  #stage { position:relative; width:100%; aspect-ratio: var(--ratio);
+  #stage { position:relative; width:100%; aspect-ratio:var(--ratio);
            background: url("sfondo.jpg") center/100% 100% no-repeat, linear-gradient(#2c3552, #6b4f5f 70%, #e9a46a); }
 
-  /* Casella sulla foto: busta che "respira" alternando due disegni, con la data sotto */
-  .door { position:absolute; width:var(--busta, 12%); aspect-ratio:640/453; transform:translate(-50%,-50%); padding:0; border:0;
-          background:none; cursor:pointer; transition: transform .2s, opacity .3s; color:var(--data, #80478E);
-          font:400 clamp(11px, 2vw, 24px) var(--font); }
-  .door .idle { position:absolute; inset:0; }
-  .door { overflow:visible; }
-  .door .idle img { position:absolute; left:0; top:-53.4%; width:100%; height:153.4%; pointer-events:none;
-                    filter:drop-shadow(0 3px 5px rgba(0,0,0,.35)); }
-  .door .idle .i0 { animation:alt0 1s steps(1,end) infinite; animation-delay:var(--d); }
-  .door .idle .i1 { animation:alt1 1s steps(1,end) infinite; animation-delay:var(--d); }
-  @keyframes alt0 { 0%{opacity:1} 50%{opacity:0} 100%{opacity:1} }
-  @keyframes alt1 { 0%{opacity:0} 50%{opacity:1} 100%{opacity:0} }
-  .door .giorno { position:absolute; left:50%; top:100%; transform:translateX(-50%); margin-top:2px; white-space:nowrap;
-                  pointer-events:none; text-shadow:0 0 4px rgba(255,255,255,.75); }
-  .door:hover { transform:translate(-50%,-50%) scale(1.08); }
+  /* Foglietto sulla foto: vibra (0° ↔ 4° ogni mezzo secondo), con la data sopra */
+  .door { position:absolute; width:calc(var(--lf) * 1%); transform:translate(-50%,-50%); padding:0; border:0; background:none;
+          cursor:pointer; line-height:0; font:inherit; transition:transform .2s, opacity .3s; }
+  .door:hover { transform:translate(-50%,-50%) scale(1.06); }
   .door:focus-visible { outline:3px solid #fff; outline-offset:6px; }
+  .fg { display:block; position:relative; filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));
+        animation:vibra 1s steps(1,end) infinite; animation-delay:var(--d); }
+  @keyframes vibra { 0%{transform:rotate(0deg)} 50%{transform:rotate(4deg)} 100%{transform:rotate(0deg)} }
+  .fg img { width:100%; height:auto; display:block; pointer-events:none; }
+  .data { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+          line-height:1; color:var(--data); pointer-events:none; }
+  .data b { font-weight:400; font-size:calc(var(--lf) * .36vw); }
+  .data i { font-style:normal; font-size:calc(var(--lf) * .18vw); }
   .door.locked { filter:grayscale(.8) brightness(.8); cursor:not-allowed; }
   .door.locked:hover { transform:translate(-50%,-50%); }
   .door.opened { opacity:.55; }
-  .door.shake { animation: shake .4s; }
+  .door.shake { animation:shake .4s; }
   @keyframes shake { 20%,60%{translate:-6px 0} 40%,80%{translate:6px 0} }
 
-  /* Sorpresa a schermo: la busta arriva al centro, si apre e il biglietto diventa la sorpresa */
-  #overlay { --w:min(94vw,760px,78vh); position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-             background:rgba(15,18,30,.75); padding:16px; z-index:10; }
-  #overlay.on { display:flex; }
-  #scene { position:relative; z-index:12; width:calc(var(--w) * .92); height:min(82vh, calc(var(--w) * .96)); visibility:hidden; }
-  #scene.open { visibility:visible; }
+  /* Foglio grande al centro: si gira di 180° e sul retro (a specchio) compare la sorpresa */
+  #overlay { position:fixed; inset:0; display:none; background:rgba(15,18,30,.65); z-index:10; }
+  #overlay.on { display:block; }
+  #foglio { position:fixed; left:50%; top:50%; z-index:11; cursor:pointer; transform-style:preserve-3d; }
+  #foglio .fronte { position:absolute; inset:0; width:100%; height:100%; }
+  #foglio .retro { position:absolute; inset:0; transform:rotateY(180deg) translateZ(2px); backface-visibility:hidden;
+                   display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+                   gap:calc(var(--u) * 4); padding:calc(var(--u) * 11) calc(var(--u) * 10);
+                   font-size:calc(var(--u) * 7.5); line-height:1.25; color:var(--ink); }
+  #foglio .scatto { max-width:68%; max-height:55%; width:auto; height:auto; transform:rotate(-3deg);
+                    box-shadow:0 calc(var(--u) * .8) calc(var(--u) * 2.5) rgba(0,0,0,.35); }
+  #foglio .did { white-space:pre-line; }
+  #foglio .nascosto { color:transparent; }
+  #foglio .etichetta { width:48%; display:block; }
+  #foglio .etichetta img { width:100%; display:block; }
 
-  #env { position:fixed; inset:0; margin:auto; z-index:11; width:var(--w); height:calc(var(--w) * 695 / 640); }
-  #env img { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
-  #env .back, #env .front, #env .carta { display:none; }
-  #env.fine .f { display:none; }
-  #env.fine .back, #env.fine .front, #env.fine .carta { display:block; }
-  #env .back { clip-path:inset(0 0 60% 0); }
-  #env .front { clip-path:inset(40% 0 0 0); z-index:3; }
-  #env .carta { position:absolute; left:4%; width:92%; top:40%; height:56%; z-index:2; background:#fff;
-                border-radius:0; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+  #finale { max-width:44rem; margin:0 auto; padding:28px 20px 44px; text-align:center; white-space:pre-line;
+            font-size:clamp(18px, 2.4vw, 28px); line-height:1.4; color:var(--msg, #fff8ec); }
+  #finale:empty { display:none; }
 
-  #content { position:absolute; inset:0; background:#fff; border:0; border-radius:0;
-             padding:24px; overflow:auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
-             gap:12px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
-  #content h2 { margin:0; font-size:1.4rem; }
-  #content p { margin:0; font-size:1.25rem; line-height:1.5; white-space:pre-line; }
-  #content img { max-width:100%; max-height:48vh; border-radius:6px; }
-  #content .nota { font-size:3rem; }
-  #content .brano { font-size:1.4rem; }
-  #content a.btn { padding:10px 20px; background:var(--red); color:#fff; border-radius:999px; text-decoration:none; }
-
-  /* Sorpresa foto: la foto riempie tutto il quadrato, con un'etichetta per la didascalia */
-  #content.foto { display:block; padding:0; border:0; overflow:hidden; }
-  #content.foto img.scatto { width:100%; height:100%; max-height:none; object-fit:cover; border-radius:0; display:block; }
-  .etichetta { position:absolute; left:50%; bottom:6%; transform:translateX(-50%); width:62%; text-align:center; }
-  .etichetta img { width:100%; display:block; border-radius:0; }
-  .etichetta .testo { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-                      padding:0 10%; font-size:1.4rem; line-height:1.1; color:var(--ink); }
-  .etichetta.base { background:#fff; border:0; border-radius:0; padding:10px 12px; font-size:1.4rem; color:var(--ink); }
-
-  #bar { position:fixed; left:8px; top:8px; z-index:20; display:none; gap:8px; background:#fff; padding:8px; border-radius:8px; font:14px sans-serif; } /* barra di servizio, resta normale */
+  #bar { position:fixed; left:8px; top:8px; z-index:20; display:none; gap:8px; background:#fff; padding:8px; border-radius:8px; font:14px sans-serif; }
   body.edit #bar { display:flex; align-items:center; }
   body.edit .door { cursor:grab; touch-action:none; }
-  @media (prefers-reduced-motion: reduce) { .door { transition:none; } .door .idle img { animation:none; } .door .idle .i1 { display:none; } }
+  @media (prefers-reduced-motion: reduce) { .door { transition:none; } .fg { animation:none; } }
 </style>
 </head>
 <body>
 
-<div id="bar"><span>Modalità sposta: trascina le caselle</span><button id="copy">Copia posizioni</button></div>
+<div id="bar"><span>Modalità sposta: trascina i foglietti</span><button id="copy">Copia posizioni</button></div>
 <div id="stage"></div>
-<div id="overlay">
-  <div id="scene" role="dialog" aria-modal="true"><div id="content"></div></div>
-</div>
+<footer id="finale"></footer>
+<div id="overlay" role="dialog" aria-modal="true"></div>
 
 <script>
 /* =====================================================================
@@ -94,48 +74,44 @@
      "messaggio" → usa msg
      "foto"      → usa img (percorso della foto) e, se vuoi, didascalia (es. la data della foto)
      "canzone"   → usa brano (titolo) e link (indirizzo della canzone)
-   Le buste (i due disegni "a riposo" e i frame di apertura) si cambiano in BUSTA_IDLE e BUSTA_APERTURA qui sotto.
    ===================================================================== */
 const RATIO = 1.6;            // larghezza ÷ altezza della tua immagine di sfondo
 const ANNO = 2026;
-const LARGHEZZA_BUSTA = 12;   // larghezza di ogni busta sulla foto, in % della larghezza dello sfondo (più grande = buste più grandi)
-const COLORE_DATE = "#80478E"; // colore delle scritte "26 NOV", "27 NOV"...
-const ETICHETTA = "";         // il tuo disegno dell'etichetta per le foto (es. "disegni/etichetta.png"). Vuoto = etichetta semplice di prova
-
-// Buste (cartella "disegni"). Tutti i frame hanno la stessa inquadratura.
-//   apertura-0 = chiusa ruotata, apertura-1 = chiusa dritta (a riposo si alternano 1-0-1-0)
-//   apertura-2, 3 = si apre; apertura-4 = aperta; apertura-5, 6 = si richiude (poi torna all'alternanza)
-const BUSTA_IDLE = ["disegni/apertura-1.png", "disegni/apertura-0.png"];
-const BUSTA_APERTURA = ["disegni/apertura-1.png", "disegni/apertura-2.png", "disegni/apertura-3.png", "disegni/apertura-4.png"];
-const BUSTA_CHIUSURA = ["disegni/apertura-5.png", "disegni/apertura-6.png"];
-const MS_FRAME = 140;         // durata di ogni frame dell'apertura (millisecondi)
 const SBLOCCA_TUTTO = true;   // true = puoi aprire tutto per provare. Mettilo a false prima di condividere!
 
-// Foto segnaposto per la prova: quando hai le tue, scrivi "foto/nome.jpg" al posto di prova(n)
-const prova = n => "data:image/svg+xml;utf8," + encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8b44c"/><stop offset="1" stop-color="#b8402f"/></linearGradient></defs><rect width="600" height="420" fill="url(#g)"/><text x="300" y="230" font-family="Georgia" font-size="48" fill="#fff" text-anchor="middle">Foto del giorno ${n}</text></svg>`);
+// Disposizione dei foglietti: tre righe (5 + 4 + 5)
+const LARGHEZZA_FOGLIO = 14;  // larghezza di ogni foglietto, in % della larghezza dello sfondo (più grande = foglietti più grandi)
+const FILE = [5, 4, 5];       // quanti foglietti per riga
+const Y_RIGHE = [26, 52, 78]; // altezza di ogni riga, in % dell'altezza dello sfondo
+const PASSO_X = 17;           // distanza orizzontale tra due foglietti (in % della larghezza)
+
+// Un foglietto diverso per ogni tipo di sorpresa (cartella "disegni")
+const FOGLI = { foto: "disegni/busta_1.png", canzone: "disegni/busta_2.png", messaggio: "disegni/busta_3.png" };
+const ETICHETTA = "disegni/etichetta.png";   // il pezzetto di carta "clicca qui!" per le canzoni
+const MS_LETTERA = 35;        // velocità della macchina da scrivere (millisecondi per lettera)
+
+const COLORE_DATE = "#80478E";      // colore di numero e mese scritti sul foglietto
+const COLORE_PAGINA = "#1d2233";    // colore dello sfondo della pagina (la parte sotto/intorno alla foto)
+const COLORE_MESSAGGIO = "#fff8ec"; // colore del messaggio in fondo alla pagina
+const MESSAGGIO_FINALE = "Scrivi qui il tuo piccolo messaggio.";  // compare in fondo alla pagina; vuoto = niente
 
 const GIORNI = [
-  { data:"11-26", pos:[14,22], tipo:"canzone",   brano:"hai due occhi giganti che luccicano, guardano i miei", link:"https://open.spotify.com/intl-it/track/39J4IyWQJWcBPU6tMnlD07?si=21a4ecfae375446f" },
-  { data:"11-27", pos:[26,22], tipo:"messaggio", msg:"i am looking inward and finding the image of caterina everywhere!" },
-  { data:"11-28", pos:[38,22], tipo:"foto",      img:"foto/28.png", didascalia:"noi versione serata romantica" },
-  { data:"11-29", pos:[50,22], tipo:"foto",      img:"foto/29.png", didascalia:"si festeggia il primo maggio :P" },
-  { data:"11-30", pos:[62,22], tipo:"canzone",   brano:"this could be the end of wanting", link:"https://open.spotify.com/intl-it/track/6TSHGfV9E66qCNu4UP6xZu?si=21931ec4fbc44803" },
-  { data:"12-01", pos:[74,22], tipo:"messaggio", msg:"light of my eyes and delight of my soul that you are!" },
-  { data:"12-02", pos:[86,22], tipo:"foto",      img:"foto/2.png", didascalia:"UN ANNO INSIEMEEE" },
-  { data:"12-03", pos:[14,52], tipo:"canzone",   brano:"forever is a feeling and i know it well", link:"https://open.spotify.com/intl-it/track/0r1Hes7jhihnSh8ql9XGya?si=980945050bc34fe6" },
-  { data:"12-04", pos:[26,52], tipo:"messaggio", msg:"ti manco amore mio? tra una settimana sono da te...ci penso tutto il tempo! ti amooooo" },
-  { data:"12-05", pos:[38,52], tipo:"messaggio", msg:"i cannot allow myself any sort of happiness that does not, in some way or another, involve you." },
-  { data:"12-06", pos:[50,52], tipo:"foto",      img:"foto/6.png", didascalia:"la mia foto preferita!!!" },
-  { data:"12-07", pos:[62,52], tipo:"canzone",   brano:"our days and nights are perfumed with obsession", link:"https://open.spotify.com/intl-it/track/5q4BpnMrYEFzLO0dYODj6J?si=a622c19c8309426c" },
-  { data:"12-08", pos:[74,52], tipo:"foto",      img:"foto/8.png", didascalia:"noi x sempre" },
-  { data:"12-09", pos:[86,52], tipo:"messaggio", msg:"il mio viaggio giunge al termine e anche questo piccolo calendario! non vedo l'ora di rivederti amore mio dolce, a tra pochissimooooo" },
+  { data:"11-26", tipo:"canzone",   brano:"hai due occhi giganti che luccicano, guardano i miei", link:"https://open.spotify.com/intl-it/track/39J4IyWQJWcBPU6tMnlD07?si=21a4ecfae375446f" },
+  { data:"11-27", tipo:"messaggio", msg:"i am looking inward and finding the image of caterina everywhere!" },
+  { data:"11-28", tipo:"foto",      img:"foto/28.png", didascalia:"noi versione serata romantica" },
+  { data:"11-29", tipo:"foto",      img:"foto/29.png", didascalia:"si festeggia il primo maggio :P" },
+  { data:"11-30", tipo:"canzone",   brano:"this could be the end of wanting", link:"https://open.spotify.com/intl-it/track/6TSHGfV9E66qCNu4UP6xZu?si=21931ec4fbc44803" },
+  { data:"12-01", tipo:"messaggio", msg:"light of my eyes and delight of my soul that you are!" },
+  { data:"12-02", tipo:"foto",      img:"foto/2.png", didascalia:"UN ANNO INSIEMEEE" },
+  { data:"12-03", tipo:"canzone",   brano:"forever is a feeling and i know it well", link:"https://open.spotify.com/intl-it/track/0r1Hes7jhihnSh8ql9XGya?si=980945050bc34fe6" },
+  { data:"12-04", tipo:"messaggio", msg:"ti manco amore mio? tra una settimana sono da te...ci penso tutto il tempo! ti amooooo" },
+  { data:"12-05", tipo:"messaggio", msg:"i cannot allow myself any sort of happiness that does not, in some way or another, involve you." },
+  { data:"12-06", tipo:"foto",      img:"foto/6.png", didascalia:"la mia foto preferita!!!" },
+  { data:"12-07", tipo:"canzone",   brano:"our days and nights are perfumed with obsession", link:"https://open.spotify.com/intl-it/track/5q4BpnMrYEFzLO0dYODj6J?si=a622c19c8309426c" },
+  { data:"12-08", tipo:"foto",      img:"foto/8.png", didascalia:"noi x sempre" },
+  { data:"12-09", tipo:"messaggio", msg:"il mio viaggio giunge al termine e anche questo piccolo calendario! non vedo l'ora di rivederti amore mio dolce, a tra pochissimooooo" },
 ];
 /* ===================== fine parte da modificare ===================== */
-
-// Misure dei frame di apertura (640 x 695): dove sta la busta chiusa dentro il frame
-const CHIUSA_TOP = 0.348, CHIUSA_H = 0.652;
-[...BUSTA_IDLE, ...BUSTA_APERTURA, ...BUSTA_CHIUSURA].forEach(src => { new Image().src = src; });  // precarico i disegni
 
 const params = new URLSearchParams(location.search);
 const editMode = params.has("sposta");
@@ -144,19 +120,24 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (editMode) document.body.classList.add("edit");
 
 const $ = id => document.getElementById(id);
-const stage = $("stage"), overlay = $("overlay"), scene = $("scene"), content = $("content");
+const stage = $("stage"), overlay = $("overlay");
+const root = document.documentElement;
 stage.style.setProperty("--ratio", RATIO);
-stage.style.setProperty("--busta", LARGHEZZA_BUSTA + "%");
-document.documentElement.style.setProperty("--data", COLORE_DATE);
+stage.style.setProperty("--lf", LARGHEZZA_FOGLIO);
+root.style.setProperty("--data", COLORE_DATE);
+root.style.setProperty("--night", COLORE_PAGINA);
+root.style.setProperty("--msg", COLORE_MESSAGGIO);
+$("finale").textContent = MESSAGGIO_FINALE;
+
+// precarico foglietti, etichetta e foto
+[...Object.values(FOGLI), ETICHETTA, ...GIORNI.map(g => g.img)].filter(Boolean).forEach(src => { new Image().src = src; });
 
 let opened = [];
 try { opened = JSON.parse(localStorage.getItem("aperti") || "[]"); } catch (e) {}
 
-const MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
 const MESI_BREVI = ["GEN","FEB","MAR","APR","MAG","GIU","LUG","AGO","SET","OTT","NOV","DIC"];
 const num = g => parseInt(g.data.split("-")[1], 10);
-const sigla = g => `${num(g)} ${MESI_BREVI[parseInt(g.data.split("-")[0], 10) - 1]}`;
-const titolo = g => `${num(g)} ${MESI[parseInt(g.data.split("-")[0], 10) - 1]}`;
+const mese = g => MESI_BREVI[parseInt(g.data.split("-")[0], 10) - 1];
 // Data di oggi in Italia (AAAA-MM-GG), qualunque sia il fuso orario del dispositivo
 const oggiInItalia = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 // Si apre dalla mezzanotte italiana del giorno in poi
@@ -164,15 +145,23 @@ const isUnlocked = g => unlockAll || oggiInItalia() >= `${ANNO}-${g.data}`;
 const refreshers = [];
 setInterval(() => refreshers.forEach(f => f()), 30000); // se la pagina resta aperta, a mezzanotte si sblocca da sola
 
-GIORNI.forEach(g => {
+function el(tag, props, parent) { const e = Object.assign(document.createElement(tag), props); parent.appendChild(e); return e; }
+
+// posizioni automatiche in righe da 5 + 4 + 5 (se un giorno ha "pos":[x,y] vale quella)
+const auto = [];
+FILE.forEach((n, r) => { for (let j = 0; j < n; j++) auto.push([50 + (j - (n - 1) / 2) * PASSO_X, Y_RIGHE[r]]); });
+
+GIORNI.forEach((g, i) => {
+  g.pos = g.pos || auto[i] || [50, 50];
   const b = document.createElement("button");
   b.className = "door";
-  const idle = el("div", { className: "idle" }, b);
-  BUSTA_IDLE.forEach((src, i) => el("img", { className: "i" + i, src, alt: "", draggable: false }, idle));
-  idle.style.setProperty("--d", `-${Math.random().toFixed(2)}s`);   // ogni busta parte sfasata
-  el("span", { className: "giorno", textContent: sigla(g) }, b);
+  const fg = el("span", { className: "fg" }, b);
+  fg.style.setProperty("--d", `-${Math.random().toFixed(2)}s`);   // ogni foglietto parte sfasato
+  el("img", { src: FOGLI[g.tipo], alt: "", draggable: false }, fg);
+  const d = el("span", { className: "data" }, fg);
+  el("b", { textContent: num(g) }, d); el("i", { textContent: mese(g) }, d);
   b.style.left = g.pos[0] + "%"; b.style.top = g.pos[1] + "%";
-  b.setAttribute("aria-label", titolo(g));
+  b.setAttribute("aria-label", `${num(g)} ${mese(g)}`);
   const refresh = () => {
     b.classList.toggle("locked", !isUnlocked(g));
     b.classList.toggle("opened", opened.includes(g.data));
@@ -192,115 +181,85 @@ GIORNI.forEach(g => {
   stage.appendChild(b);
 });
 
-function el(tag, props, parent) { const e = Object.assign(document.createElement(tag), props); parent.appendChild(e); return e; }
+/* ---------- macchina da scrivere: il testo intero occupa già il suo spazio, le lettere compaiono una a una ---------- */
+let tok = 0;
+function prepara(box, testo) {
+  box.innerHTML = "";
+  el("span", {}, box); el("span", { className: "nascosto", textContent: testo }, box);
+}
+function scrivi(box, testo) {
+  const id = ++tok, [a, b] = box.children;
+  if (reduceMotion) { a.textContent = testo; b.textContent = ""; return; }
+  let n = 0;
+  const t = setInterval(() => {
+    if (id !== tok) return clearInterval(t);          // chiuso nel frattempo
+    n++; a.textContent = testo.slice(0, n); b.textContent = testo.slice(n);
+    if (n >= testo.length) clearInterval(t);
+  }, MS_LETTERA);
+}
+
+/* ---------- apertura: il foglio vola al centro girandosi di 180° (a specchio) ---------- */
+let foglioEl = null, portaCorrente = null, pronto = false, chiudendo = false;
+const PERSP = "perspective(1400px)";
+const FINE = `${PERSP} rotateY(180deg)`;
+
+function trasformaDa(doorImg, W) {                     // posizione/scala del foglietto sulla foto, rispetto al centro
+  const r = doorImg.getBoundingClientRect();
+  const dx = r.left + r.width / 2 - root.clientWidth / 2, dy = r.top + r.height / 2 - innerHeight / 2;
+  return `${PERSP} translate(${dx}px,${dy}px) scale(${r.width / W}) rotateY(0deg)`;
+}
 
 function openGift(g, doorEl) {
-  // 1) contenuto dietro le ante
-  content.innerHTML = "";
-  const isFoto = g.tipo === "foto";
-  content.classList.toggle("foto", isFoto);
-  if (!isFoto) el("h2", { textContent: titolo(g) }, content);
-  if (isFoto) {
-    const cap = g.didascalia || g.msg || "";
-    el("img", { className: "scatto", src: g.img, alt: cap }, content);
-    if (cap) {
-      if (ETICHETTA) {
-        const e = el("div", { className: "etichetta" }, content);
-        el("img", { src: ETICHETTA, alt: "" }, e);
-        el("div", { className: "testo", textContent: cap }, e);
-      } else {
-        el("div", { className: "etichetta base", textContent: cap }, content);
-      }
-    }
-  } else if (g.tipo === "canzone") {
-    el("div", { className: "nota", textContent: "🎵" }, content);
-    el("div", { className: "brano", textContent: g.brano || "" }, content);
-    el("a", { className: "btn", href: g.link, target: "_blank", rel: "noopener", textContent: "Ascolta" }, content);
-  } else {
-    el("p", { textContent: g.msg || "" }, content);
-  }
-
-  // 2) la busta vola al centro e si apre frame dopo frame
-  portaCorrente = doorEl;
-  if (envEl) envEl.remove();
-  scene.classList.remove("open");
+  const doorImg = doorEl.querySelector("img");
+  const ar = (doorImg.naturalWidth / doorImg.naturalHeight) || 1;
+  const W = Math.min(root.clientWidth * .88, 560, innerHeight * .84 * ar), H = W / ar;
+  const da = trasformaDa(doorImg, W);
+  portaCorrente = doorEl; pronto = false;
+  doorEl.style.visibility = "hidden";
   overlay.classList.add("on");
-  if (reduceMotion) { envEl = null; scene.classList.add("open"); return; }
-  const last = BUSTA_APERTURA[BUSTA_APERTURA.length - 1];
-  const mine = envEl = el("div", { id: "env" }, overlay);
-  const f = el("img", { className: "f", src: BUSTA_APERTURA[0], alt: "" }, mine);
-  el("img", { className: "back", src: last, alt: "" }, mine);
-  const carta = el("div", { className: "carta" }, mine);
-  el("img", { className: "front", src: last, alt: "" }, mine);
-  const alive = () => envEl === mine;
 
-  const to = mine.getBoundingClientRect(), from = doorEl.getBoundingClientRect();
-  const cy = CHIUSA_TOP + CHIUSA_H / 2;                      // centro della busta chiusa dentro il frame
-  mine.style.transformOrigin = `50% ${cy * 100}%`;
-  const dx = (from.left + from.width / 2) - (to.left + to.width / 2);
-  const dy = (from.top + from.height / 2) - (to.top + to.height * cy);
-  mine.animate(
-    [{ transform: `translate(${dx}px,${dy}px) scale(${from.width / to.width})` }, { transform: "none" }],
-    { duration: 650, easing: "cubic-bezier(.2,.8,.2,1)" }
-  ).onfinish = () => {
-    if (!alive()) return;
-    BUSTA_APERTURA.slice(1).forEach((src, i) => setTimeout(() => { if (alive()) f.src = src; }, (i + 1) * MS_FRAME));
-    setTimeout(() => { if (alive()) esceBiglietto(); }, BUSTA_APERTURA.length * MS_FRAME);
-  };
+  const fg = foglioEl = el("div", { id: "foglio" }, overlay);
+  Object.assign(fg.style, { width: W + "px", height: H + "px", marginLeft: -W / 2 + "px", marginTop: -H / 2 + "px" });
+  fg.style.setProperty("--u", W / 100 + "px");
+  el("img", { className: "fronte", src: FOGLI[g.tipo], alt: "" }, fg);
 
-  // 3) il biglietto esce dalla busta...
-  function esceBiglietto() {
-    mine.classList.add("fine");
-    const h = mine.getBoundingClientRect().height;
-    carta.animate([{ transform: "none" }, { transform: `translateY(${-h * 0.2}px)` }],
-      { duration: 700, easing: "ease-out", fill: "forwards" }).onfinish = () => { if (alive()) rivela(); };
+  // retro del foglio (si vede solo dopo i 90° di rotazione, già leggibile)
+  const retro = el("div", { className: "retro" }, fg);
+  const testo = g.tipo === "foto" ? (g.didascalia || "") : g.tipo === "canzone" ? (g.brano || "") : (g.msg || "");
+  const fs = g.tipo === "messaggio" ? (testo.length > 100 ? 6 : testo.length > 60 ? 7.5 : 9) : 7.5;
+  retro.style.fontSize = `calc(var(--u) * ${fs})`;
+  if (g.tipo === "foto") el("img", { className: "scatto", src: g.img, alt: testo }, retro);   // foto: appare mentre il foglio gira
+  const did = el("div", { className: "did" }, retro);
+  prepara(did, testo);
+  if (g.tipo === "canzone") {                                                                    // etichetta: appare subito
+    const a = el("a", { className: "etichetta", href: g.link, target: "_blank", rel: "noopener" }, retro);
+    el("img", { src: ETICHETTA, alt: "clicca qui!" }, a);
   }
-  // 4) ...e si ingrandisce fino a diventare la sorpresa
-  function rivela() {
-    const c = carta.getBoundingClientRect();
-    scene.classList.add("open");
-    const s = scene.getBoundingClientRect();
-    scene.animate(
-      [{ transform: `translate(${c.left + c.width / 2 - (s.left + s.width / 2)}px,${c.top + c.height / 2 - (s.top + s.height / 2)}px) scale(${c.width / s.width},${c.height / s.height})`, opacity: 0 },
-       { transform: "none", opacity: 1 }],
-      { duration: 650, easing: "cubic-bezier(.2,.8,.2,1)" });
-    mine.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" })
-      .onfinish = () => { mine.remove(); if (envEl === mine) envEl = null; };
-  }
+
+  fg.style.transform = FINE;
+  const fatto = () => { pronto = true; scrivi(did, testo); };
+  if (reduceMotion) return fatto();
+  fg.animate([{ transform: da }, { transform: FINE }], { duration: 1000, easing: "cubic-bezier(.3,.7,.2,1)" }).onfinish = fatto;
 }
-let envEl = null, portaCorrente = null, chiudendo = false;
+
+/* ---------- chiusura: il foglio si rigira e torna al suo posto ---------- */
 function closeGift() {
-  if (chiudendo || !overlay.classList.contains("on")) return;
-  const rivelata = scene.classList.contains("open");
-  if (envEl) { envEl.remove(); envEl = null; }
-  if (!rivelata || reduceMotion || !portaCorrente) { scene.classList.remove("open"); overlay.classList.remove("on"); return; }
-
-  // la sorpresa sparisce, la busta (vuota) si richiude e torna al suo posto, poi riprende l'alternanza
-  chiudendo = true;
-  const sp = scene.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: "forwards" });
-  sp.onfinish = () => {
-    scene.classList.remove("open"); sp.cancel();
-    const mine = envEl = el("div", { id: "env" }, overlay);
-    const f = el("img", { className: "f", src: BUSTA_APERTURA[BUSTA_APERTURA.length - 1], alt: "" }, mine);
-    const seq = [...BUSTA_CHIUSURA, BUSTA_APERTURA[0]];
-    seq.forEach((src, i) => setTimeout(() => { f.src = src; }, (i + 1) * MS_FRAME));
-    setTimeout(() => {
-      const to = mine.getBoundingClientRect(), from = portaCorrente.getBoundingClientRect();
-      const cy = CHIUSA_TOP + CHIUSA_H / 2;
-      mine.style.transformOrigin = `50% ${cy * 100}%`;
-      const dx = (from.left + from.width / 2) - (to.left + to.width / 2);
-      const dy = (from.top + from.height / 2) - (to.top + to.height * cy);
-      overlay.animate([{ backgroundColor: "rgba(15,18,30,.75)" }, { backgroundColor: "rgba(15,18,30,0)" }], { duration: 550 });
-      mine.animate(
-        [{ transform: "none" }, { transform: `translate(${dx}px,${dy}px) scale(${from.width / to.width})` }],
-        { duration: 550, easing: "cubic-bezier(.5,0,.2,1)", fill: "forwards" }
-      ).onfinish = () => { mine.remove(); envEl = null; overlay.classList.remove("on"); chiudendo = false; };
-    }, (seq.length + 1) * MS_FRAME);
+  const fg = foglioEl;
+  if (!fg || !pronto || chiudendo) return;
+  chiudendo = true; tok++;                             // ferma la macchina da scrivere
+  const fine = () => {
+    fg.remove(); foglioEl = null; portaCorrente.style.visibility = "";
+    overlay.classList.remove("on"); chiudendo = false; pronto = false;
   };
+  if (reduceMotion) return fine();
+  const a = trasformaDa(portaCorrente.querySelector("img"), fg.offsetWidth);
+  overlay.animate([{ backgroundColor: "rgba(15,18,30,.65)" }, { backgroundColor: "rgba(15,18,30,0)" }], { duration: 800 });
+  fg.animate([{ transform: FINE }, { transform: a }], { duration: 800, easing: "cubic-bezier(.5,0,.2,1)", fill: "forwards" }).onfinish = fine;
 }
-overlay.addEventListener("click", e => { if (e.target === overlay) closeGift(); });
+overlay.addEventListener("click", e => { if (!e.target.closest("a")) closeGift(); });
 addEventListener("keydown", e => { if (e.key === "Escape") closeGift(); });
 
+/* ---------- modalità ?sposta=1 ---------- */
 function makeDraggable(b, g) {
   b.addEventListener("pointerdown", e => {
     b.setPointerCapture(e.pointerId);
@@ -316,7 +275,7 @@ function makeDraggable(b, g) {
 }
 $("copy").addEventListener("click", () => {
   const txt = GIORNI.map(g => `${g.data}: pos:[${g.pos[0]},${g.pos[1]}]`).join("\n");
-  navigator.clipboard.writeText(txt).then(() => alert("Copiato! Incollami le posizioni in chat oppure sostituisci i pos nel file."));
+  navigator.clipboard.writeText(txt).then(() => alert("Copiato! Incollami le posizioni in chat oppure aggiungi pos:[x,y] al giorno nel file."));
 });
 </script>
 </body>
