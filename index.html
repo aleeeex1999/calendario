@@ -47,17 +47,27 @@
   #foglio .fronte { position:absolute; inset:0; width:100%; height:100%; }
   #foglio .retro { position:absolute; inset:0; transform:rotateY(180deg) translateZ(2px); backface-visibility:hidden;
                    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
-                   gap:calc(var(--u) * 4); padding:calc(var(--u) * 11) calc(var(--u) * var(--mx, 18));
+                   gap:calc(var(--u) * 2); padding:calc(var(--u) * 11) calc(var(--u) * var(--mx, 18));
                    font-size:calc(var(--u) * 7.5); line-height:1.25; color:var(--testo, var(--ink)); }
   #foglio .scatto {
-    max-width:calc(var(--u) * 56);
-    max-height:55%;
-    width:auto;
-    height:auto;
-    transform:rotate(-3deg);
-    box-shadow:0 calc(var(--u) * .8) calc(var(--u) * 2.5) rgba(0,0,0,.35);
-    opacity:1;
-    mix-blend-mode:normal;
+    display: block;
+    max-width: calc(var(--u) * 56);
+    max-height: 55%;
+    width: auto;
+    height: auto;
+    transform: rotate(-3deg);
+    box-shadow: 0 calc(var(--u) * .8) calc(var(--u) * 2.5) rgba(0,0,0,.35);
+    opacity: 1;
+    mix-blend-mode: normal;
+  }
+  #foglio .contenitore-foto {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
   }
   
   #foglio .retro {
@@ -91,13 +101,13 @@
   #foglio .etichetta img { width:100%; display:block; }
   /* Scotch sopra le fotografie */
   #foglio .scotch-foto {
-    position:absolute;
-    left:50%;
-    top:0;
-    width:calc(var(--u) * 35);
-    transform:translate(-50%, -50%) rotate(-5deg);
-    z-index:4;
-    pointer-events:none;
+    position: absolute;
+    left: 50%;
+    top: 3%;
+    width: calc(var(--u) * 35);
+    transform: translate(-50%, 0) rotate(-5deg);
+    z-index: 4;
+    pointer-events: none;
   }
   
   #foglio .scotch-foto img {
@@ -333,9 +343,9 @@ function openGift(g, doorEl) {
   /* Foto originali: nessun ridimensionamento Canvas */
   if (g.tipo === "foto") {
     const contenitoreFoto = el("div", {
-      style: "position:relative; display:inline-block;"
-    }, retro);  
-    
+      className: "contenitore-foto"
+    }, retro);
+  
     el("img", {
       className: "scatto",
       src: g.img,
